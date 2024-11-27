@@ -4,9 +4,16 @@ export const TYPES_OF_MESSAGES = {
 
 export type TypeOfMessage = keyof typeof TYPES_OF_MESSAGES;
 
-interface UserData {
-	name: string;
-	password: string;
+export interface Message {
+	type: TypeOfMessage;
+	id: 0;
+}
+
+export interface UserMessage extends Message {
+	data: {
+		name: string;
+		password: string;
+	};
 }
 
 interface ErrorData {
@@ -17,9 +24,3 @@ interface ErrorData {
 }
 
 type Data = UserData | ErrorData;
-
-export interface Message {
-	type: TypeOfMessage;
-	data: Data;
-	id: 0;
-}
