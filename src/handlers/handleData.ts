@@ -7,14 +7,14 @@ import { roomHandler } from './room';
 import { winnerHandler } from './winner';
 
 export const handlers = {
-	[TYPES_OF_MESSAGES.reg]: (client: WebSocket, data: RequestData) => {
-		playerHandler.createUser(client, data);
+	[TYPES_OF_MESSAGES.reg]: (client: WebSocket, data: RequestData, clientId: number) => {
+		playerHandler.createUser(client, data, clientId);
 		roomHandler.updateRoom(client);
 		winnerHandler.updateWinners(client);
 	},
 };
 
-export function handleData(ws: WebSocket, message: RawData) {
+export function handleData(ws: WebSocket, message: RawData, clientId: number) {
 	if (!Buffer.isBuffer(message)) {
 		throw new Error('Invalid message');
 	}
@@ -38,6 +38,6 @@ export function handleData(ws: WebSocket, message: RawData) {
 			throw new Error('Invalid message');
 		}
 
-		handler(ws, parsedData);
+		handler(ws, parsedData, clientId);
 	}
 }

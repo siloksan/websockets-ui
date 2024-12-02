@@ -25,7 +25,7 @@ class PlayerHandler {
 		return true;
 	}
 
-	public createUser(client: WebSocket, data: RequestData): void {
+	public createUser(client: WebSocket, data: RequestData, clientId: number): void {
 		if (!this.validate(data)) {
 			client.send(JSON.stringify({ error: 'Invalid data' }));
 			return;
@@ -33,7 +33,7 @@ class PlayerHandler {
 
 		const { name } = data;
 		try {
-			const response = this.addUser(data);
+			const response = this.addUser(data, clientId);
 
 			client.send(JSON.stringify({ type: TYPES_OF_MESSAGES.reg, data: JSON.stringify(response) }));
 		} catch (error) {
@@ -47,14 +47,13 @@ class PlayerHandler {
 		}
 	}
 
-	private addUser(data: UserDataReq) {
+	private addUser(data: UserDataReq, clientId: number): UserDataRes {
 		if (this.players.some((player) => player.name === data.name)) {
 			throw new Error('User already exists');
 		}
 
 		const { name } = data;
-		const index = new Date().getTime();
-		const response = { error: false, errorText: '', name, index };
+		const response = { error: false, errorText: '', name, index: clientId };
 		this.players.push(data);
 		return response;
 	}

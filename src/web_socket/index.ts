@@ -6,10 +6,11 @@ export function startWebSocketServer(port: number = 8181) {
 	const wsServer = new WebSocketServer({ port });
 	logger(`WebSocket server started on the ${port} port!`);
 	wsServer.on('connection', (ws) => {
-		logger('WebSocket client connected!');
+		const clientId = Date.now();
+		logger(`WebSocket client with id: ${clientId} connected!`);
 		ws.on('message', (message) => {
 			try {
-				handleData(ws, message);
+				handleData(ws, message, clientId);
 			} catch (error) {
 				logger(JSON.stringify(error));
 				ws.send(JSON.stringify(error));
