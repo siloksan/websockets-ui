@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 import { TYPES_OF_MESSAGES, Winner } from '../types';
 
-class WinnersHandler {
+export class WinnersHandler {
 	private readonly winners: Winner[] = [];
 
 	validate() {

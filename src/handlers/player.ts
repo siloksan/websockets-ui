@@ -1,62 +1,33 @@
-import { isNonEmptyString, isNullable, isObject } from '../validators';
-import { TYPES_OF_MESSAGES, UserDataRes, RequestData, UserDataReq } from '../types';
-import WebSocket from 'ws';
-import { logger } from '../utils';
+import { isNullable } from '../validators/common';
+import { TYPES_OF_MESSAGES, UserDataRes, UserDataReq, ClientId, UserId } from '../types';
+import { DataStorage } from '../data-storage';
+import { MessageManager } from '../message-manager';
 
-class PlayerHandler {
-	private readonly players: UserDataReq[] = [];
-	validate(data: RequestData): data is UserDataReq {
-		if (!isObject(data)) {
-			return false;
+export class PlayerHandler {
+	private readonly users = DataStorage.getInstance().users;
+	private readonly messageManager = MessageManager.getInstance();
+
+	public createUser(data: UserDataReq, clientId: ClientId): void {
+		let userId: UserId | '' = '';
+		let error = false;
+		let errorText = '';
+		const { name, password } = data;
+		const user = this.users.get(data.name);
+
+		if (isNullable(user)) {
+			userId = `UserId-${this.users.size}`;
+			this.users.set(name, { ...data, index: userId });
+		} else if (user.password === password) {
+			userId = user.index;
+		} else {
+			error = true;
+			errorText = 'Wrong password';
 		}
 
-		if (!('password' in data) || !('name' in data)) {
-			return false;
-		}
-
-		if (isNullable(data.name) || isNullable(data.password)) {
-			return false;
-		}
-
-		if (!isNonEmptyString(data.name) || !isNonEmptyString(data.password)) {
-			return false;
-		}
-
-		return true;
-	}
-
-	public createUser(client: WebSocket, data: RequestData, clientId: number): void {
-		if (!this.validate(data)) {
-			client.send(JSON.stringify({ error: 'Invalid data' }));
-			return;
-		}
-
-		const { name } = data;
-		try {
-			const response = this.addUser(data, clientId);
-
-			client.send(JSON.stringify({ type: TYPES_OF_MESSAGES.reg, data: JSON.stringify(response) }));
-		} catch (error) {
-			if (error instanceof Error) {
-				logger(error.message);
-
-				const response: UserDataRes = { error: true, errorText: error.message, name, index: '' };
-
-				client.send(JSON.stringify({ type: TYPES_OF_MESSAGES.reg, data: JSON.stringify(response) }));
-			}
-		}
-	}
-
-	private addUser(data: UserDataReq, clientId: number): UserDataRes {
-		if (this.players.some((player) => player.name === data.name)) {
-			throw new Error('User already exists');
-		}
-
-		const { name } = data;
-		const response = { error: false, errorText: '', name, index: clientId };
-		this.players.push(data);
-		return response;
+		const response: UserDataRes = { error, errorText, name, index: userId };
+		this.messageManager.sendMessage(
+			clientId,
+			JSON.stringify({ type: TYPES_OF_MESSAGES.reg, data: JSON.stringify(response) })
+		);
 	}
 }
-
-export const playerHandler = new PlayerHandler();

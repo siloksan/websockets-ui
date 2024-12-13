@@ -10,7 +10,8 @@
 		"lint:code": "eslint \"src/**/*.ts\" --fix",
 		"lint:types": "tsc --noEmit",
 		"lint": "npm run lint:code && npm run lint:types",
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"prepare": "husky"
 	},
 	"author": "Tutel",
 	"keywords": [],
