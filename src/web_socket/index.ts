@@ -3,9 +3,18 @@ import { WebSocketServer } from 'ws';
 import { BaseGameHandler } from '../handlers/BaseGameHandler';
 import { PlayerHandler } from '../handlers/player';
 import { MessageManager } from '../message-manager';
-import { ClientId } from '../types';
+import { ClientId, TYPES_OF_MESSAGES } from '../types';
+import { RoomHandler } from '../handlers/room';
+import { handleMessage } from '../utils/parse-message';
+import { ShipsHandler } from '../handlers/ships';
+import { LaunchHandler } from '../handlers/launch';
 
-export const handlers = new BaseGameHandler(new PlayerHandler());
+export const baseGameHandler = new BaseGameHandler(
+	new PlayerHandler(),
+	new RoomHandler(),
+	new ShipsHandler(),
+	new LaunchHandler()
+);
 
 export function startWebSocketServer(port: number = 8181) {
 	const wsServer = new WebSocketServer({ port });
@@ -20,7 +29,7 @@ export function startWebSocketServer(port: number = 8181) {
 
 		ws.on('message', (message) => {
 			try {
-				handlers.handleMessage(message, clientId);
+				handleMessage(message, clientId, baseGameHandler);
 			} catch (error) {
 				if (error instanceof Error) {
 					logger(error.message);
@@ -31,7 +40,11 @@ export function startWebSocketServer(port: number = 8181) {
 				}
 			}
 			ws.on('close', function close() {
-				console.log('Client disconnected');
+				console.log(`WebSocket client with id: ${clientId} disconnected!`);
+				const disconnectHandler = baseGameHandler.handlers.get(TYPES_OF_MESSAGES.disconnect);
+				if (disconnectHandler) {
+					disconnectHandler({ clientId });
+				}
 			});
 
 			ws.on('error', function error(err) {

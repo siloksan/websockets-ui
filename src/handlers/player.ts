@@ -1,25 +1,41 @@
 import { isNullable } from '../validators/common';
-import { TYPES_OF_MESSAGES, UserDataRes, UserDataReq, ClientId, UserId } from '../types';
+import { TYPES_OF_MESSAGES, UserDataRes, UserDataReq, ClientId, RegisteredUser } from '../types';
 import { DataStorage } from '../data-storage';
 import { MessageManager } from '../message-manager';
 
 export class PlayerHandler {
 	private readonly users = DataStorage.getInstance().users;
 	private readonly messageManager = MessageManager.getInstance();
+	private readonly usersIDs: Map<string, ClientId> = new Map();
 
 	public createUser(data: UserDataReq, clientId: ClientId): void {
-		let userId: UserId | '' = '';
+		let userId: ClientId | '' = '';
 		let error = false;
 		let errorText = '';
+		let existedUserData: RegisteredUser | undefined;
 		const { name, password } = data;
-		const user = this.users.get(data.name);
 
-		if (isNullable(user)) {
-			userId = `UserId-${this.users.size}`;
-			this.users.set(name, { ...data, index: userId });
-		} else if (user.password === password) {
-			userId = user.index;
-		} else {
+		// if user already exist we need to get his id
+		const oldUserIndex = this.usersIDs.get(name);
+
+		// if user doesn't exist we need to create new
+		if (isNullable(oldUserIndex)) {
+			userId = clientId;
+			this.users.set(userId, { ...data, index: userId });
+		}
+
+		// if user exist we need to check password
+		if (!isNullable(oldUserIndex)) {
+			existedUserData = this.users.get(oldUserIndex);
+		}
+
+		if (!isNullable(existedUserData) && existedUserData.password === password) {
+			this.usersIDs.set(existedUserData.name, clientId);
+			userId = clientId;
+		}
+
+		// if user doesn't exist or password is wrong we need to send error
+		if (userId === '') {
 			error = true;
 			errorText = 'Wrong password';
 		}

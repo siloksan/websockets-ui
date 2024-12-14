@@ -26,18 +26,6 @@ export function validateAddShipsData(data: RequestData): data is AddShipsReq {
 		return false;
 	}
 
-	if (!('type' in data)) {
-		return false;
-	}
-
-	if (!isNonEmptyString(data.type)) {
-		return false;
-	}
-
-	if (!(data.type in SHIPS_TYPES)) {
-		return false;
-	}
-
 	if (!('ships' in data)) {
 		return false;
 	}
@@ -46,7 +34,7 @@ export function validateAddShipsData(data: RequestData): data is AddShipsReq {
 		return false;
 	}
 
-	const shipsValid = data.ships.every((ship) => this.validateShipData(ship));
+	const shipsValid = data.ships.every((ship) => validateShipData(ship));
 
 	if (!shipsValid) {
 		return false;

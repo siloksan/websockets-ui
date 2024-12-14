@@ -1,34 +1,46 @@
-import WebSocket from 'ws';
-import { GameId, GameShipsStorage, GameStartReq, WebSocketClients } from '../types';
+import { AddShipsReq, GameStartRes, ShipsStorage, TYPES_OF_MESSAGES } from '../types';
 import { isNullable } from '../validators/common';
 import { MessageManager } from '../message-manager';
+import { DataStorage } from '../data-storage';
 
 export class LaunchHandler {
-	private readonly gameShipsStorage: GameShipsStorage;
-	private readonly messageManager: MessageManager;
-	private readonly wsClients: WebSocketClients;
+	private readonly messageManager = MessageManager.getInstance();
+	private readonly ships = DataStorage.getInstance().ships;
 
-	constructor(gameShipsStorage: GameShipsStorage, wsClients: WebSocketClients) {
-		this.gameShipsStorage = gameShipsStorage;
-		this.wsClients = wsClients;
-	}
-
-	public checkReadinessOfPlayers(gameId: GameId) {
-		const games = this.gameShipsStorage.get(gameId);
-
-		if (isNullable(games)) {
+	public checkReadinessOfPlayers(currentGame?: ShipsStorage[]) {
+		if (isNullable(currentGame)) {
 			return false;
 		}
 
 		// if both players added their ships
-		return games.length === 2;
+		return currentGame.length === 2;
 	}
 
-	public startGame(client: WebSocket, clientId: number) {
-		const gameShipsStorage = this.gameShipsStorage.get(clientId);
-		if (gameShipsStorage && gameShipsStorage.length === 2) {
-			const response: GameStartReq = {};
-			console.log('response: ', response);
-		}
+	public startGame(data: AddShipsReq) {
+		const { gameId } = data;
+
+		const currentGame = this.ships.get(gameId);
+		console.log('currentGame: ', currentGame);
+		const playersIsReady = this.checkReadinessOfPlayers(currentGame);
+
+		if (!playersIsReady || isNullable(currentGame)) return;
+
+		// start games for ready players
+		currentGame.forEach((player) => {
+			const clientId = player.indexPlayer;
+			const response: GameStartRes = {
+				currentPlayerIndex: clientId,
+				ships: player.ships,
+			};
+
+			this.messageManager.sendMessage(
+				clientId,
+				JSON.stringify({
+					type: TYPES_OF_MESSAGES.start_game,
+					data: JSON.stringify(response),
+					id: 0,
+				})
+			);
+		});
 	}
 }

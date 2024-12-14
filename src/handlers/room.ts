@@ -1,90 +1,59 @@
-import WebSocket from 'ws';
-import {
-	AddUserToRoomReq,
-	CreateGameRes,
-	CreateRoomReq,
-	RequestData,
-	Room,
-	TYPES_OF_MESSAGES,
-	WebSocketClients,
-} from '../types';
-import { isNonEmptyString, isNullable, isObject } from '../validators/common';
-import { ROOMS, USERS } from '../data-storage';
+import { AddUserToRoomReq, ClientId, CreateGameRes, Room, TYPES_OF_MESSAGES } from '../types';
+import { isNullable } from '../validators/common';
+import { DataStorage } from '../data-storage';
+import { MessageManager } from '../message-manager';
 
 export class RoomHandler {
-	private rooms = ROOMS;
-	private readonly users = USERS;
-	private readonly wsClients: WebSocketClients;
-
-	constructor(wsClients: WebSocketClients) {
-		this.wsClients = wsClients;
-	}
-
-	private validateCreateRoomData(data: RequestData): data is CreateRoomReq {
-		return !isNonEmptyString(data);
-	}
-
-	private validateAddUserToRoomData(data: RequestData): data is AddUserToRoomReq {
-		if (!isObject(data)) {
-			return false;
-		}
-
-		return 'indexRoom' in data;
-	}
+	private readonly users = DataStorage.getInstance().users;
+	private rooms = DataStorage.getInstance().rooms;
+	private readonly messageManager = MessageManager.getInstance();
 
 	public updateRoom = () => {
-		this.createGame();
-		this.wsClients.forEach((client) => {
-			client.send(JSON.stringify({ type: TYPES_OF_MESSAGES.update_room, data: JSON.stringify(this.rooms) }));
-		});
+		this.messageManager.broadcastMessage(
+			JSON.stringify({ type: TYPES_OF_MESSAGES.update_room, data: JSON.stringify(this.rooms), id: 0 })
+		);
 	};
 
-	public createRoom(client: WebSocket, data: RequestData, clientId: number) {
-		if (!this.validateCreateRoomData(data)) {
-			client.send(JSON.stringify({ error: 'Invalid data' }));
+	public createRoom(clientId: ClientId) {
+		const user = this.users.get(clientId);
+		if (isNullable(user)) {
+			this.messageManager.sendMessage(clientId, JSON.stringify({ error: 'User not found' }));
 		} else {
-			const user = this.users.find((user) => user.index === clientId);
-			if (isNullable(user)) {
-				client.send(JSON.stringify({ error: 'User not found' }));
-			} else {
-				const room = { roomId: Date.now(), roomUsers: [{ name: user.name, index: clientId }] };
-				this.rooms.push(room);
-			}
+			const room = { roomId: Date.now(), roomUsers: [{ name: user.name, index: user.index }] };
+			this.rooms.push(room);
 		}
 	}
 
-	public addUserToRoom(client: WebSocket, data: RequestData, clientId: number) {
-		if (!this.validateAddUserToRoomData(data)) {
-			client.send(JSON.stringify({ error: 'Invalid data' }));
-		} else {
-			const room = this.rooms.find((room) => room.roomId === data.indexRoom);
-			const user = this.users.find((user) => user.index === clientId);
+	public addUserToRoom(data: AddUserToRoomReq, clientId: ClientId) {
+		const { indexRoom } = data;
+		const room = this.rooms.find((room) => room.roomId === indexRoom);
+		const user = this.users.get(clientId);
 
-			if (isNullable(room) || isNullable(user)) {
-				client.send(JSON.stringify({ error: 'Invalid data' }));
-			} else if (this.checkUserInRoom(room, clientId)) {
-				client.send(JSON.stringify({ error: 'User already in the room!' }));
-			} else {
-				room.roomUsers.push({ name: user.name, index: clientId });
-			}
+		if (isNullable(room) || isNullable(user)) {
+			this.messageManager.sendMessage(clientId, JSON.stringify({ error: 'Invalid data' }));
+		} else if (this.checkUserInRoom(room, clientId)) {
+			this.messageManager.sendMessage(clientId, JSON.stringify({ error: 'User already in the room!' }));
+		} else {
+			room.roomUsers.push({ name: user.name, index: clientId });
 		}
 	}
 
-	private readonly checkUserInRoom = (room: Room, clientId: number) => {
+	private readonly checkUserInRoom = (room: Room, clientId: ClientId) => {
 		const currentUser = room.roomUsers.find((user) => user.index === clientId);
 		return !isNullable(currentUser);
 	};
 
-	private readonly createGame = () => {
-		const newRooms = this.rooms.filter((room, idx) => {
+	public readonly createGame = () => {
+		this.rooms = this.rooms.filter((room, idx) => {
 			if (room.roomUsers.length === 2) {
 				room.roomUsers.forEach((user) => {
 					const newGameData: CreateGameRes = {
 						idGame: `GameId-${idx}`,
-						idPlayer: Number(user.index),
+						idPlayer: user.index,
 					};
 
-					this.wsClients.get(newGameData.idPlayer)!.send(
+					this.messageManager.sendMessage(
+						user.index,
 						JSON.stringify({
 							type: TYPES_OF_MESSAGES.create_game,
 							data: JSON.stringify(newGameData),
@@ -98,7 +67,26 @@ export class RoomHandler {
 				return true;
 			}
 		});
+	};
 
-		this.rooms = newRooms;
+	public readonly deleteRoom = (roomId: number) => {
+		this.rooms = this.rooms.filter((room) => room.roomId !== roomId);
+	};
+
+	public readonly removeUserInRoom = (clientId: ClientId) => {
+		this.rooms.some((room) => {
+			let userRoomIndex: number | null = null;
+			room.roomUsers.some((user, index) => {
+				if (user.index === clientId) {
+					userRoomIndex = index;
+					return true;
+				}
+				return false;
+			});
+			if (!isNullable(userRoomIndex)) {
+				room.roomUsers = room.roomUsers.filter((_, idx) => userRoomIndex !== idx);
+				return true;
+			}
+		});
 	};
 }

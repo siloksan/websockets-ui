@@ -2,26 +2,24 @@ import WebSocket from 'ws';
 
 export const TYPES_OF_MESSAGES = {
 	reg: 'reg',
+	disconnect: 'disconnect',
 	update_room: 'update_room',
 	update_winners: 'update_winners',
 	create_room: 'create_room',
 	add_user_to_room: 'add_user_to_room',
 	create_game: 'create_game',
 	add_ships: 'add_ships',
-};
+	start_game: 'start_game',
+} as const;
 
+// ClientId === UserId
 export type ClientId = `ClientId-${number}`;
 export type GameId = `GameId-${number}`;
-export type UserId = `UserId-${number}`;
 
 export type GameShipsStorage = Map<GameId, ShipsStorage[]>;
-export type RegisteredUsers = Map<string, RegisteredUser>;
+export type RegisteredUsers = Map<ClientId, RegisteredUser>;
 
-export interface RegisteredUser extends UserDataReq {
-	index: UserId;
-}
-
-export type RequestData = UserDataReq | CreateRoomReq | AddUserToRoomReq | AddShipsReq;
+export type RequestData = UserDataReq | CreateRoomReq | AddUserToRoomReq | AddShipsReq | undefined;
 export type ResponseData = UserDataRes | CreateGameRes;
 
 export type TypeOfMessage = keyof typeof TYPES_OF_MESSAGES;
@@ -37,11 +35,15 @@ export interface UserDataReq {
 	password: string;
 }
 
+export interface RegisteredUser extends UserDataReq {
+	index: ClientId;
+}
+
 export type CreateRoomReq = '';
 
 export interface UserDataRes {
 	name: string;
-	index: UserId | '';
+	index: ClientId | '';
 	error: boolean;
 	errorText: string;
 }
@@ -50,14 +52,14 @@ export interface AddUserToRoomReq {
 	indexRoom: number;
 }
 
-export interface RoomUsers {
+export interface RoomUser {
 	name: string;
-	index: string | number;
+	index: ClientId;
 }
 
 export interface Room {
 	roomId: number;
-	roomUsers: RoomUsers[];
+	roomUsers: RoomUser[];
 }
 
 export interface Winner {
@@ -67,7 +69,7 @@ export interface Winner {
 
 export interface CreateGameRes {
 	idGame: GameId;
-	idPlayer: number;
+	idPlayer: ClientId;
 }
 
 export type WebSocketClients = Map<number, WebSocket>;
@@ -96,15 +98,21 @@ export interface Ship {
 export interface AddShipsReq {
 	gameId: GameId;
 	ships: Ship[];
-	indexPlayer: number;
+	indexPlayer: ClientId;
 }
 
 export interface ShipsStorage {
-	indexPlayer: number;
+	indexPlayer: ClientId;
 	ships: Ship[];
 }
 
-export interface GameStartReq {
-	currentPlayerIndex: number;
+export interface GameStartRes {
+	currentPlayerIndex: ClientId;
 	ships: Ship[];
+}
+
+export interface ResponseMessage {
+	type: TypeOfMessage;
+	data: ResponseData;
+	id: 0;
 }
