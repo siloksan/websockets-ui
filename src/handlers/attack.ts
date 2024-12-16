@@ -15,6 +15,7 @@ import { MessageManager } from '../message-manager';
 import { DataStorage } from '../data-storage';
 import { isInRange, isNullable } from '../validators/common';
 import { TurnHandler } from './turn';
+import { LaunchHandler } from './launch';
 
 type ShotResult = [AttackType, Ship] | [AttackType];
 
@@ -26,7 +27,11 @@ export class AttackHandler {
 	private readonly messageManager = MessageManager.getInstance();
 	private readonly ships = DataStorage.getInstance().ships;
 
-	constructor(private readonly turnHandler: TurnHandler) {}
+	constructor(
+		private readonly turnHandler: TurnHandler,
+
+		private readonly launchHandler: LaunchHandler
+	) {}
 
 	public attack(data: AttackReq) {
 		const { gameId, indexPlayer, x, y } = data;
@@ -78,6 +83,7 @@ export class AttackHandler {
 
 		//after each attack send message about whose next turn
 		this.turnHandler.sendTurnMessage(gameId);
+		this.launchHandler.finishGame(currentGame);
 	}
 
 	public randomAttack(data: RandomAttackDataReq) {
@@ -121,6 +127,7 @@ export class AttackHandler {
 
 		//after each attack send message about whose next turn
 		this.turnHandler.sendTurnMessage(gameId);
+		this.launchHandler.finishGame(currentGame);
 	}
 
 	private getCurrentGameData(gameId: GameId) {

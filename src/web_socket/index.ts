@@ -12,13 +12,14 @@ import { AttackHandler } from '../handlers/attack';
 import { TurnHandler } from '../handlers/turn';
 
 const turnHandler = new TurnHandler();
+const launchHandler = new LaunchHandler();
 
 export const baseGameHandler = new BaseGameHandler(
 	new PlayerHandler(),
 	new RoomHandler(),
 	new ShipsHandler(),
 	new LaunchHandler(),
-	new AttackHandler(turnHandler),
+	new AttackHandler(turnHandler, launchHandler),
 	turnHandler
 );
 

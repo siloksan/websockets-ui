@@ -13,6 +13,7 @@ export const TYPES_OF_MESSAGES = {
 	attack: 'attack',
 	turn: 'turn',
 	randomAttack: 'randomAttack',
+	finish: 'finish',
 } as const;
 
 export type TypeOfMessage = keyof typeof TYPES_OF_MESSAGES;
@@ -49,7 +50,8 @@ export type RequestData =
 	| AttackReq
 	| RandomAttackDataReq
 	| undefined;
-export type ResponseData = UserDataRes | CreateGameRes | TurnRes;
+
+export type ResponseData = UserDataRes | CreateGameRes | TurnRes | UpdateUserWinsResData | FinishGame;
 
 export interface RequestMessage {
 	type: TypeOfMessage;
@@ -157,6 +159,12 @@ export interface TurnRes {
 	currentPlayer: ClientId;
 }
 
+export type UpdateUserWinsResData = UserWins[];
+
+export interface FinishGame {
+	winPlayer: ClientId;
+}
+
 // common types
 export interface NumberRange {
 	min: number;
@@ -174,4 +182,9 @@ export interface PlayerShipsData extends ShipsStorage {
 	hits: number;
 	shotsStorage: ShotsStorage;
 	turn: boolean;
+}
+
+export interface UserWins {
+	user: string;
+	wins: number;
 }
