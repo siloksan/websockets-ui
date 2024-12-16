@@ -10,29 +10,51 @@ export const TYPES_OF_MESSAGES = {
 	create_game: 'create_game',
 	add_ships: 'add_ships',
 	start_game: 'start_game',
+	attack: 'attack',
+	turn: 'turn',
+	randomAttack: 'randomAttack',
 } as const;
+
+export type TypeOfMessage = keyof typeof TYPES_OF_MESSAGES;
+
+export const SHIPS_TYPES = {
+	small: 'small',
+	medium: 'medium',
+	large: 'large',
+	huge: 'huge',
+} as const;
+
+type ShipType = keyof typeof SHIPS_TYPES;
+
+export const ATTACK_STATUS = {
+	miss: 'miss',
+	killed: 'killed',
+	shot: 'shot',
+} as const;
+
+export type AttackType = keyof typeof ATTACK_STATUS;
 
 // ClientId === UserId
 export type ClientId = `ClientId-${number}`;
 export type GameId = `GameId-${number}`;
 
-export type GameShipsStorage = Map<GameId, ShipsStorage[]>;
+export type GameShipsStorage = Map<GameId, PlayerShipsData[]>;
 export type RegisteredUsers = Map<ClientId, RegisteredUser>;
 
-export type RequestData = UserDataReq | CreateRoomReq | AddUserToRoomReq | AddShipsReq | undefined;
-export type ResponseData = UserDataRes | CreateGameRes;
-
-export type TypeOfMessage = keyof typeof TYPES_OF_MESSAGES;
+export type RequestData =
+	| UserDataReq
+	| CreateRoomReq
+	| AddUserToRoomReq
+	| AddShipsReq
+	| AttackReq
+	| RandomAttackDataReq
+	| undefined;
+export type ResponseData = UserDataRes | CreateGameRes | TurnRes;
 
 export interface RequestMessage {
 	type: TypeOfMessage;
 	data: RequestData;
 	id: 0;
-}
-
-export interface UserDataReq {
-	name: string;
-	password: string;
 }
 
 export interface RegisteredUser extends UserDataReq {
@@ -46,10 +68,6 @@ export interface UserDataRes {
 	index: ClientId | '';
 	error: boolean;
 	errorText: string;
-}
-
-export interface AddUserToRoomReq {
-	indexRoom: number;
 }
 
 export interface RoomUser {
@@ -74,31 +92,16 @@ export interface CreateGameRes {
 
 export type WebSocketClients = Map<number, WebSocket>;
 
-export interface ShipPosition {
+export interface Position {
 	x: number;
 	y: number;
 }
 
-export const SHIPS_TYPES = {
-	small: 'small',
-	medium: 'medium',
-	large: 'large',
-	huge: 'huge',
-} as const;
-
-type ShipType = keyof typeof SHIPS_TYPES;
-
 export interface Ship {
-	position: ShipPosition;
+	position: Position;
 	direction: boolean;
 	length: number;
 	type: ShipType;
-}
-
-export interface AddShipsReq {
-	gameId: GameId;
-	ships: Ship[];
-	indexPlayer: ClientId;
 }
 
 export interface ShipsStorage {
@@ -111,8 +114,64 @@ export interface GameStartRes {
 	ships: Ship[];
 }
 
+// request types
+export interface AttackReq extends Position {
+	gameId: GameId;
+	indexPlayer: ClientId;
+}
+
+export interface AddShipsReq {
+	gameId: GameId;
+	ships: Ship[];
+	indexPlayer: ClientId;
+}
+
+export interface AddUserToRoomReq {
+	indexRoom: number;
+}
+
+export interface UserDataReq {
+	name: string;
+	password: string;
+}
+
+export interface RandomAttackDataReq {
+	gameId: GameId;
+	indexPlayer: ClientId;
+}
+
+// response types
 export interface ResponseMessage {
 	type: TypeOfMessage;
 	data: ResponseData;
 	id: 0;
+}
+
+export interface AttackRes {
+	position: Position;
+	currentPlayer: ClientId;
+	status: AttackType;
+}
+
+export interface TurnRes {
+	currentPlayer: ClientId;
+}
+
+// common types
+export interface NumberRange {
+	min: number;
+	max: number;
+}
+
+export interface ShotShips {
+	hitPositions: Position[];
+}
+
+export type ShotsStorage = Set<string>;
+
+export interface PlayerShipsData extends ShipsStorage {
+	shotShips: Map<number, ShotShips>;
+	hits: number;
+	shotsStorage: ShotsStorage;
+	turn: boolean;
 }

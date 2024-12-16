@@ -1,4 +1,14 @@
-import { AddShipsReq, AddUserToRoomReq, CreateRoomReq, RequestData, Ship, SHIPS_TYPES, UserDataReq } from '../../types';
+import {
+	AddShipsReq,
+	AddUserToRoomReq,
+	AttackReq,
+	CreateRoomReq,
+	RandomAttackDataReq,
+	RequestData,
+	Ship,
+	SHIPS_TYPES,
+	UserDataReq,
+} from '../../types';
 import { isNonEmptyString, isNullable, isObject } from '../common';
 
 export function validateUserData(data: RequestData): data is UserDataReq {
@@ -85,4 +95,20 @@ export function validateAddUserToRoomData(data: RequestData): data is AddUserToR
 	}
 
 	return 'indexRoom' in data;
+}
+
+export function validateAttackData(data: RequestData): data is AttackReq {
+	if (!isObject(data)) {
+		return false;
+	}
+
+	return 'gameId' in data && 'x' in data && 'y' in data && 'indexPlayer' in data;
+}
+
+export function validateRandomAttackData(data: RequestData): data is RandomAttackDataReq {
+	if (!isObject(data)) {
+		return false;
+	}
+
+	return 'gameId' in data && 'indexPlayer' in data;
 }

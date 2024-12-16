@@ -20,7 +20,6 @@ export class LaunchHandler {
 		const { gameId } = data;
 
 		const currentGame = this.ships.get(gameId);
-		console.log('currentGame: ', currentGame);
 		const playersIsReady = this.checkReadinessOfPlayers(currentGame);
 
 		if (!playersIsReady || isNullable(currentGame)) return;
@@ -42,5 +41,7 @@ export class LaunchHandler {
 				})
 			);
 		});
+
+		return currentGame;
 	}
 }

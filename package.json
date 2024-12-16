@@ -5,7 +5,6 @@
 	"main": "dist/index.js",
 	"scripts": {
 		"start": "nodemon src/index.ts",
-		"debug1": "nodemon --inspect src/index.ts",
 		"debug": "nodemon --watch src --inspect --exec \"node -r ts-node/register\" src/index.ts",
 		"start:prod": "npm run build && node dist/index.js",
 		"build": "webpack --config webpack.config.js",

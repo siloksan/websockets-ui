@@ -8,12 +8,18 @@ import { RoomHandler } from '../handlers/room';
 import { handleMessage } from '../utils/parse-message';
 import { ShipsHandler } from '../handlers/ships';
 import { LaunchHandler } from '../handlers/launch';
+import { AttackHandler } from '../handlers/attack';
+import { TurnHandler } from '../handlers/turn';
+
+const turnHandler = new TurnHandler();
 
 export const baseGameHandler = new BaseGameHandler(
 	new PlayerHandler(),
 	new RoomHandler(),
 	new ShipsHandler(),
-	new LaunchHandler()
+	new LaunchHandler(),
+	new AttackHandler(turnHandler),
+	turnHandler
 );
 
 export function startWebSocketServer(port: number = 8181) {
@@ -39,17 +45,18 @@ export function startWebSocketServer(port: number = 8181) {
 					ws.send(JSON.stringify(error));
 				}
 			}
-			ws.on('close', function close() {
-				console.log(`WebSocket client with id: ${clientId} disconnected!`);
-				const disconnectHandler = baseGameHandler.handlers.get(TYPES_OF_MESSAGES.disconnect);
-				if (disconnectHandler) {
-					disconnectHandler({ clientId });
-				}
-			});
+		});
 
-			ws.on('error', function error(err) {
-				console.error('WebSocket Error:', err);
-			});
+		ws.on('close', () => {
+			console.log(`WebSocket client with id: ${clientId} disconnected!`);
+			const disconnectHandler = baseGameHandler.handlers.get(TYPES_OF_MESSAGES.disconnect);
+			if (disconnectHandler) {
+				disconnectHandler({ clientId });
+			}
+		});
+
+		ws.on('error', function error(err) {
+			console.error('WebSocket Error:', err);
 		});
 	});
 }

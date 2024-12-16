@@ -1,4 +1,4 @@
-import { RequestMessage } from '../../types';
+import { NumberRange, RequestMessage } from '../../types';
 
 export function isObject(value: unknown): value is object {
 	return Object.prototype.toString.call(value) === '[object Object]';
@@ -14,4 +14,9 @@ export function isNullable(value: unknown): value is null | undefined {
 
 export function isValidMessage(message: unknown): message is RequestMessage {
 	return isObject(message) && 'type' in message && 'id' in message;
+}
+
+export function isInRange(value: number, range: NumberRange): boolean {
+	const { min, max } = range;
+	return value >= min && value <= max;
 }

@@ -21,17 +21,20 @@ export class PlayerHandler {
 		// if user doesn't exist we need to create new
 		if (isNullable(oldUserIndex)) {
 			userId = clientId;
+			this.usersIDs.set(data.name, clientId);
 			this.users.set(userId, { ...data, index: userId });
 		}
 
-		// if user exist we need to check password
+		// if user exist we need to get his data
 		if (!isNullable(oldUserIndex)) {
 			existedUserData = this.users.get(oldUserIndex);
 		}
 
+		// if user exist we need to check password
 		if (!isNullable(existedUserData) && existedUserData.password === password) {
-			this.usersIDs.set(existedUserData.name, clientId);
 			userId = clientId;
+			this.usersIDs.set(existedUserData.name, userId);
+			this.users.set(userId, { ...data, index: userId });
 		}
 
 		// if user doesn't exist or password is wrong we need to send error
