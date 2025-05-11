@@ -38,15 +38,20 @@ export type AttackType = keyof typeof ATTACK_STATUS;
 
 export type ID = ReturnType<typeof randomUUID>;
 
+// uuid === clientId
 export interface UserData {
 	uuid: ID;
 	clientId: ID | null;
 	name: string;
 	password: string;
+	roomId: ID | null;
+	gameId: ID | null;
+	wins: number;
 }
 
 export type GameShipsStorage = Map<ID, PlayerShipsData[]>;
 export type Users = Map<ID, UserData>;
+export type Rooms = Map<ID, Room>;
 
 export type RequestData =
 	| UserData
@@ -74,14 +79,14 @@ export interface UserDataRes {
 	errorText: string;
 }
 
-export interface RoomUser {
-	name: string;
-	index: ID;
-}
+// export interface RoomUser {
+// 	name: string;
+// 	index: ID;
+// }
 
 export interface Room {
-	roomId: number;
-	roomUsers: RoomUser[];
+	roomId: ID;
+	roomUsers: UserData[];
 }
 
 export interface Winner {
@@ -131,7 +136,7 @@ export interface AddShipsReq {
 }
 
 export interface AddUserToRoomReq {
-	indexRoom: number;
+	indexRoom: ID;
 }
 
 export interface RandomAttackDataReq {

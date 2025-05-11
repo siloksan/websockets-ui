@@ -2,7 +2,6 @@ import { isNullable } from '../validators/common';
 import { UserData, ID } from '../types';
 import { DataStorage } from '../data-storage';
 import { ClientError } from '../utils';
-import { randomUUID } from 'node:crypto';
 
 interface UserDto {
 	name: string;
@@ -23,9 +22,12 @@ export class PlayerHandler {
 
 	#registerUser(userDto: UserDto, clientId: ID) {
 		const userData: UserData = {
-			uuid: randomUUID(),
+			uuid: clientId,
 			clientId,
 			...userDto,
+			roomId: null,
+			gameId: null,
+			wins: 0,
 		};
 		this.users.set(userData.uuid, userData);
 
@@ -62,7 +64,8 @@ export class PlayerHandler {
 
 	public handleLogout(clientId: ID) {
 		const user = this.users.get(clientId);
-		if (user) {
+
+		if (!isNullable(user)) {
 			user.clientId = null;
 		}
 	}

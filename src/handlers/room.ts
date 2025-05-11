@@ -1,4 +1,4 @@
-import { AddUserToRoomReq, ID, CreateGameRes, Room, TYPES_OF_MESSAGES } from '../types';
+import { AddUserToRoomReq, ID, CreateGameRes, TYPES_OF_MESSAGES } from '../types';
 import { isNullable } from '../validators/common';
 import { DataStorage } from '../data-storage';
 import { MessageManager } from '../message-manager';
@@ -6,88 +6,97 @@ import { randomUUID } from 'node:crypto';
 
 export class RoomHandler {
 	private readonly users = DataStorage.getInstance().users;
-	private rooms = DataStorage.getInstance().rooms;
+	private readonly rooms = DataStorage.getInstance().rooms;
 	private readonly messageManager = MessageManager.getInstance();
 
 	public updateRoom = () => {
+		const rooms = [...this.rooms.values()];
+
+		const serializedRooms = rooms.map(({ roomId, roomUsers }) => {
+			return { roomId, roomUsers: roomUsers.map((user) => ({ name: user.name, id: user.uuid })) };
+		});
+
 		this.messageManager.broadcastMessage(
-			JSON.stringify({ type: TYPES_OF_MESSAGES.update_room, data: JSON.stringify(this.rooms), id: 0 })
+			JSON.stringify({ type: TYPES_OF_MESSAGES.update_room, data: JSON.stringify(serializedRooms), id: 0 })
 		);
 	};
 
 	public createRoom(clientId: ID) {
 		const user = this.users.get(clientId);
 		if (isNullable(user)) {
-			this.messageManager.sendMessage(clientId, JSON.stringify({ error: 'User not found' }));
-		} else {
-			const room = { roomId: Date.now(), roomUsers: [{ name: user.name, index: user.uuid }] };
-			this.rooms.push(room);
+			throw new Error('User not found');
 		}
+
+		if (user.roomId) {
+			throw new Error('User already create room');
+		}
+		user.roomId = randomUUID();
+		const room = { roomId: user.roomId, roomUsers: [user] };
+		this.rooms.set(room.roomId, room);
 	}
 
 	public addUserToRoom(data: AddUserToRoomReq, clientId: ID) {
 		const { indexRoom } = data;
-		const room = this.rooms.find((room) => room.roomId === indexRoom);
+		const room = this.rooms.get(indexRoom);
 		const user = this.users.get(clientId);
+		console.log('user: ', user);
 
 		if (isNullable(room) || isNullable(user)) {
-			this.messageManager.sendMessage(clientId, JSON.stringify({ error: 'Invalid data' }));
-		} else if (this.checkUserInRoom(room, clientId)) {
-			this.messageManager.sendMessage(clientId, JSON.stringify({ error: 'User already in the room!' }));
-		} else {
-			room.roomUsers.push({ name: user.name, index: clientId });
+			throw new Error('Room or user not found');
+		} else if (user.roomId) {
+			throw new Error('User already in the room!');
 		}
+
+		user.roomId = indexRoom;
+		room.roomUsers.push(user);
 	}
 
-	private readonly checkUserInRoom = (room: Room, clientId: ID) => {
-		const currentUser = room.roomUsers.find((user) => user.index === clientId);
-		return !isNullable(currentUser);
-	};
+	public readonly createGame = (clientId: ID) => {
+		const user = this.users.get(clientId);
+		if (isNullable(user)) {
+			throw new Error('User not found');
+		}
 
-	public readonly createGame = () => {
-		this.rooms = this.rooms.filter((room) => {
-			if (room.roomUsers.length === 2) {
-				room.roomUsers.forEach((user) => {
-					const newGameData: CreateGameRes = {
-						idGame: randomUUID(),
-						idPlayer: user.index,
-					};
+		if (user.roomId === null) {
+			throw new Error('User not in room');
+		}
 
-					this.messageManager.sendMessage(
-						user.index,
-						JSON.stringify({
-							type: TYPES_OF_MESSAGES.create_game,
-							data: JSON.stringify(newGameData),
-							id: 0,
-						})
-					);
-				});
+		const room = this.rooms.get(user.roomId);
+		if (isNullable(room)) {
+			throw new Error('Room not found');
+		}
 
-				return false;
-			} else {
-				return true;
-			}
+		room.roomUsers.forEach((user) => {
+			const gameData: CreateGameRes = {
+				idGame: randomUUID(),
+				idPlayer: user.uuid,
+			};
+
+			user.roomId = null;
+
+			this.messageManager.sendMessage(
+				user.uuid,
+				JSON.stringify({
+					type: TYPES_OF_MESSAGES.create_game,
+					data: JSON.stringify(gameData),
+					id: 0,
+				})
+			);
 		});
-	};
 
-	public readonly deleteRoom = (roomId: number) => {
-		this.rooms = this.rooms.filter((room) => room.roomId !== roomId);
+		this.rooms.delete(room.roomId);
 	};
 
 	public readonly removeUserInRoom = (clientId: ID) => {
-		this.rooms.some((room) => {
-			let userRoomIndex: number | null = null;
-			room.roomUsers.some((user, index) => {
-				if (user.index === clientId) {
-					userRoomIndex = index;
-					return true;
-				}
-				return false;
-			});
-			if (!isNullable(userRoomIndex)) {
-				room.roomUsers = room.roomUsers.filter((_, idx) => userRoomIndex !== idx);
-				return true;
-			}
-		});
+		const user = this.users.get(clientId);
+		if (isNullable(user)) {
+			throw new Error('User not found');
+		}
+
+		if (user.roomId === null) {
+			throw new Error('User not in room');
+		}
+
+		this.rooms.delete(user.roomId);
 	};
 }

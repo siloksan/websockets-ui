@@ -1,7 +1,7 @@
-import { Room, GameShipsStorage, Users } from '../types';
+import { GameShipsStorage, Users, Rooms } from '../types';
 
 export class DataStorage {
-	public readonly rooms: Room[] = [];
+	public readonly rooms: Rooms = new Map();
 	public readonly users: Users = new Map();
 	public readonly ships: GameShipsStorage = new Map();
 	public readonly winners = new Map<string, number>();

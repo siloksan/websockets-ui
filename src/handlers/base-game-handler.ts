@@ -65,7 +65,6 @@ export class BaseGameHandler {
 		}
 
 		const userData = this.playerHandler.handleUserInput(data, clientId);
-		console.log('userData: ', userData);
 		if (isNullable(userData)) {
 			throw new ClientError(
 				{
@@ -86,8 +85,7 @@ export class BaseGameHandler {
 
 	private handleCreateRoom({ data, clientId }: RequestOptions) {
 		if (!validateCreateRoomData(data)) {
-			this.messageManager.sendMessage(clientId, 'Invalid data');
-			throw new Error('Invalid data');
+			throw new Error('Invalid create room data');
 		}
 
 		this.roomHandler.createRoom(clientId);
@@ -96,18 +94,16 @@ export class BaseGameHandler {
 
 	private handleAddUserToRoom({ data, clientId }: RequestOptions) {
 		if (!validateAddUserToRoomData(data)) {
-			this.messageManager.sendMessage(clientId, 'Invalid data');
 			throw new Error('Invalid data');
 		}
 
 		this.roomHandler.addUserToRoom(data, clientId);
+		this.roomHandler.createGame(clientId);
 		this.roomHandler.updateRoom();
-		this.roomHandler.createGame();
 	}
 
 	private handleAddShips({ data, clientId }: RequestOptions) {
 		if (!validateAddShipsData(data)) {
-			this.messageManager.sendMessage(clientId, 'Invalid data');
 			throw new Error('Invalid data');
 		}
 

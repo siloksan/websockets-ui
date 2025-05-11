@@ -1,6 +1,6 @@
 import { logger, ClientError } from '../utils';
 import { randomUUID } from 'node:crypto';
-import { WebSocketServer } from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 import { BaseGameHandler } from '../handlers/base-game-handler';
 import { PlayerHandler } from '../handlers/player';
 import { MessageManager } from '../message-manager';
@@ -39,27 +39,39 @@ export function startWebSocketServer(port: number) {
 			try {
 				handleMessage(message, clientId, baseGameHandler);
 			} catch (error) {
-				if (error instanceof ClientError) {
-					logger(error.message);
-					messageManager.sendMessage(error.clientId, error.message);
-				} else if (error instanceof Error) {
-					logger(error.message);
-					ws.send(error.message);
-				} else {
-					logger(JSON.stringify(error));
-					ws.send(JSON.stringify(error));
-				}
+				handleWSError(ws, messageManager, error);
 			}
 		});
 
 		ws.on('close', () => {
 			console.log(`WebSocket client with id: ${clientId} disconnected!`);
-			baseGameHandler.handlers.get(TYPES_OF_MESSAGES.disconnect)?.({ clientId });
+			try {
+				baseGameHandler.handlers.get(TYPES_OF_MESSAGES.disconnect)?.({ clientId });
+			} catch (error) {
+				handleWSError(ws, messageManager, error);
+			}
 		});
 
 		ws.on('error', function error(err) {
 			console.error('WebSocket Error:', err);
-			baseGameHandler.handlers.get(TYPES_OF_MESSAGES.disconnect)?.({ clientId });
+			try {
+				baseGameHandler.handlers.get(TYPES_OF_MESSAGES.disconnect)?.({ clientId });
+			} catch (error) {
+				console.error(error);
+			}
 		});
 	});
+}
+
+function handleWSError(ws: WebSocket, messageManager: MessageManager, error: unknown) {
+	if (error instanceof ClientError) {
+		logger(error.message);
+		messageManager.sendMessage(error.clientId, error.message);
+	} else if (error instanceof Error) {
+		logger(error.message);
+		ws.send(error.message);
+	} else {
+		logger(JSON.stringify(error));
+		ws.send(JSON.stringify(error));
+	}
 }
