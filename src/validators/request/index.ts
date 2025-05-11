@@ -7,11 +7,11 @@ import {
 	RequestData,
 	Ship,
 	SHIPS_TYPES,
-	UserDataReq,
+	UserData,
 } from '../../types';
 import { isNonEmptyString, isNullable, isObject } from '../common';
 
-export function validateUserData(data: RequestData): data is UserDataReq {
+export function validateUserData(data: RequestData): data is UserData {
 	if (!isObject(data)) {
 		return false;
 	}

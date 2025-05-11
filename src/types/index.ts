@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+import { randomUUID } from 'node:crypto';
 
 export const TYPES_OF_MESSAGES = {
 	reg: 'reg',
@@ -35,15 +36,20 @@ export const ATTACK_STATUS = {
 
 export type AttackType = keyof typeof ATTACK_STATUS;
 
-// ClientId === UserId
-export type ClientId = `ClientId-${number}`;
-export type GameId = `GameId-${number}`;
+export type ID = ReturnType<typeof randomUUID>;
 
-export type GameShipsStorage = Map<GameId, PlayerShipsData[]>;
-export type RegisteredUsers = Map<ClientId, RegisteredUser>;
+export interface UserData {
+	uuid: ID;
+	clientId: ID | null;
+	name: string;
+	password: string;
+}
+
+export type GameShipsStorage = Map<ID, PlayerShipsData[]>;
+export type Users = Map<ID, UserData>;
 
 export type RequestData =
-	| UserDataReq
+	| UserData
 	| CreateRoomReq
 	| AddUserToRoomReq
 	| AddShipsReq
@@ -59,22 +65,18 @@ export interface RequestMessage {
 	id: 0;
 }
 
-export interface RegisteredUser extends UserDataReq {
-	index: ClientId;
-}
-
 export type CreateRoomReq = '';
 
 export interface UserDataRes {
 	name: string;
-	index: ClientId | '';
+	index: ID | '';
 	error: boolean;
 	errorText: string;
 }
 
 export interface RoomUser {
 	name: string;
-	index: ClientId;
+	index: ID;
 }
 
 export interface Room {
@@ -88,8 +90,8 @@ export interface Winner {
 }
 
 export interface CreateGameRes {
-	idGame: GameId;
-	idPlayer: ClientId;
+	idGame: ID;
+	idPlayer: ID;
 }
 
 export type WebSocketClients = Map<number, WebSocket>;
@@ -107,39 +109,34 @@ export interface Ship {
 }
 
 export interface ShipsStorage {
-	indexPlayer: ClientId;
+	indexPlayer: ID;
 	ships: Ship[];
 }
 
 export interface GameStartRes {
-	currentPlayerIndex: ClientId;
+	currentPlayerIndex: ID;
 	ships: Ship[];
 }
 
 // request types
 export interface AttackReq extends Position {
-	gameId: GameId;
-	indexPlayer: ClientId;
+	gameId: ID;
+	indexPlayer: ID;
 }
 
 export interface AddShipsReq {
-	gameId: GameId;
+	gameId: ID;
 	ships: Ship[];
-	indexPlayer: ClientId;
+	indexPlayer: ID;
 }
 
 export interface AddUserToRoomReq {
 	indexRoom: number;
 }
 
-export interface UserDataReq {
-	name: string;
-	password: string;
-}
-
 export interface RandomAttackDataReq {
-	gameId: GameId;
-	indexPlayer: ClientId;
+	gameId: ID;
+	indexPlayer: ID;
 }
 
 // response types
@@ -151,18 +148,18 @@ export interface ResponseMessage {
 
 export interface AttackRes {
 	position: Position;
-	currentPlayer: ClientId;
+	currentPlayer: ID;
 	status: AttackType;
 }
 
 export interface TurnRes {
-	currentPlayer: ClientId;
+	currentPlayer: ID;
 }
 
 export type UpdateUserWinsResData = UserWins[];
 
 export interface FinishGame {
-	winPlayer: ClientId;
+	winPlayer: ID;
 }
 
 // common types

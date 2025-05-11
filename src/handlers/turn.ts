@@ -1,13 +1,13 @@
 import { isNullable } from '../validators/common';
 import { MessageManager } from '../message-manager';
-import { GameId, PlayerShipsData, TurnRes, TYPES_OF_MESSAGES } from '../types';
+import { ID, PlayerShipsData, TurnRes, TYPES_OF_MESSAGES } from '../types';
 import { DataStorage } from '../data-storage';
 
 export class TurnHandler {
 	private readonly messageManager = MessageManager.getInstance();
 	private readonly gamesStorage = DataStorage.getInstance().ships;
 
-	public sendTurnMessage(gameId: GameId) {
+	public sendTurnMessage(gameId: ID) {
 		const currentGame = this.gamesStorage.get(gameId);
 
 		if (isNullable(currentGame) || currentGame.length < 2) {

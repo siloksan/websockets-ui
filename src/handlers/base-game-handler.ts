@@ -1,4 +1,4 @@
-import { ClientId, RequestData, TypeOfMessage, TYPES_OF_MESSAGES } from '../types';
+import { ID, RequestData, TypeOfMessage, TYPES_OF_MESSAGES } from '../types';
 import { PlayerHandler } from './player';
 import {
 	validateAddShipsData,
@@ -14,10 +14,12 @@ import { ShipsHandler } from './ships';
 import { LaunchHandler } from './launch';
 import { AttackHandler } from './attack';
 import { TurnHandler } from './turn';
+import { isNullable } from '../validators/common';
+import { ClientError } from '../utils';
 
 type RequestOptions = {
 	data?: RequestData;
-	clientId: ClientId;
+	clientId: ID;
 };
 type RequestHandler = (options: RequestOptions) => void;
 
@@ -48,15 +50,37 @@ export class BaseGameHandler {
 		this.messageManager.unregisterClient(clientId);
 		this.roomHandler.removeUserInRoom(clientId);
 		this.roomHandler.updateRoom();
+		this.playerHandler.handleLogout(clientId);
 	}
 
 	private handleRegister({ data, clientId }: RequestOptions) {
 		if (!validateUserData(data)) {
-			this.messageManager.sendMessage(clientId, 'Invalid data');
-			throw new Error('Invalid data');
+			throw new ClientError(
+				{
+					type: TYPES_OF_MESSAGES.reg,
+					data: { name: '', error: true, errorText: 'Invalid data', index: clientId },
+				},
+				clientId
+			);
 		}
 
-		this.playerHandler.createUser(data, clientId);
+		const userData = this.playerHandler.handleUserInput(data, clientId);
+		console.log('userData: ', userData);
+		if (isNullable(userData)) {
+			throw new ClientError(
+				{
+					type: TYPES_OF_MESSAGES.reg,
+					data: { name: data.name, error: true, errorText: 'Something went wrong', index: clientId },
+				},
+				clientId
+			);
+		}
+
+		this.messageManager.sendMessage(
+			clientId,
+			JSON.stringify({ type: TYPES_OF_MESSAGES.reg, data: JSON.stringify(userData) })
+		);
+
 		this.roomHandler.updateRoom();
 	}
 

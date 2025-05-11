@@ -1,52 +1,69 @@
 import { isNullable } from '../validators/common';
-import { TYPES_OF_MESSAGES, UserDataRes, UserDataReq, ClientId, RegisteredUser } from '../types';
+import { UserData, ID } from '../types';
 import { DataStorage } from '../data-storage';
-import { MessageManager } from '../message-manager';
+import { ClientError } from '../utils';
+import { randomUUID } from 'node:crypto';
 
+interface UserDto {
+	name: string;
+	password: string;
+}
 export class PlayerHandler {
 	private readonly users = DataStorage.getInstance().users;
-	private readonly messageManager = MessageManager.getInstance();
-	private readonly usersIDs: Map<string, ClientId> = new Map();
 
-	public createUser(data: UserDataReq, clientId: ClientId): void {
-		let userId: ClientId | '' = '';
-		let error = false;
-		let errorText = '';
-		let existedUserData: RegisteredUser | undefined;
-		const { name, password } = data;
+	public handleUserInput(userDto: UserDto, clientId: ID): UserData | undefined {
+		const userData = this.#getUserByName(userDto.name);
 
-		// if user already exist we need to get his id
-		const oldUserIndex = this.usersIDs.get(name);
-
-		// if user doesn't exist we need to create new
-		if (isNullable(oldUserIndex)) {
-			userId = clientId;
-			this.usersIDs.set(data.name, clientId);
-			this.users.set(userId, { ...data, index: userId });
+		if (isNullable(userData)) {
+			return this.#registerUser(userDto, clientId);
+		} else {
+			return this.#loginUser(userDto, userData, clientId);
 		}
+	}
 
-		// if user exist we need to get his data
-		if (!isNullable(oldUserIndex)) {
-			existedUserData = this.users.get(oldUserIndex);
-		}
-
-		// if user exist we need to check password
-		if (!isNullable(existedUserData) && existedUserData.password === password) {
-			userId = clientId;
-			this.usersIDs.set(existedUserData.name, userId);
-			this.users.set(userId, { ...data, index: userId });
-		}
-
-		// if user doesn't exist or password is wrong we need to send error
-		if (userId === '') {
-			error = true;
-			errorText = 'Wrong password';
-		}
-
-		const response: UserDataRes = { error, errorText, name, index: userId };
-		this.messageManager.sendMessage(
+	#registerUser(userDto: UserDto, clientId: ID) {
+		const userData: UserData = {
+			uuid: randomUUID(),
 			clientId,
-			JSON.stringify({ type: TYPES_OF_MESSAGES.reg, data: JSON.stringify(response) })
-		);
+			...userDto,
+		};
+		this.users.set(userData.uuid, userData);
+
+		return this.users.get(userData.uuid);
+	}
+
+	#loginUser(userDto: UserDto, userData: UserData, clientId: ID) {
+		if (userDto.password !== userData.password) {
+			throw new ClientError(
+				{ type: 'reg', data: { name: '', error: true, errorText: 'Wrong credentials', index: clientId } },
+				clientId
+			);
+		}
+
+		if (userData.clientId) {
+			throw new ClientError(
+				{ type: 'reg', data: { name: '', error: true, errorText: 'User already logged in', index: clientId } },
+				clientId
+			);
+		}
+
+		userData.clientId = clientId;
+
+		return userData;
+	}
+
+	#getUserByName(name: string): UserData | undefined {
+		const user = this.users.entries().find(([, user]) => {
+			return user.name === name;
+		});
+
+		return user?.[1];
+	}
+
+	public handleLogout(clientId: ID) {
+		const user = this.users.get(clientId);
+		if (user) {
+			user.clientId = null;
+		}
 	}
 }

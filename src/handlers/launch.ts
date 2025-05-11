@@ -68,7 +68,7 @@ export class LaunchHandler {
 
 		gameData.forEach((player) => {
 			const data: FinishGame = {
-				winPlayer: winnerData.index,
+				winPlayer: winnerData.uuid,
 			};
 
 			const response = {

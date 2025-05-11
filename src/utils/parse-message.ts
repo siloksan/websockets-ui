@@ -1,9 +1,9 @@
 import { isNonEmptyString, isValidMessage } from '../validators/common';
-import { RequestMessage, RequestData, ClientId } from '../types';
+import { RequestMessage, RequestData, ID } from '../types';
 import { RawData } from 'ws';
-import { BaseGameHandler } from '../handlers/BaseGameHandler';
+import { BaseGameHandler } from '../handlers/base-game-handler';
 
-export function handleMessage(message: RawData, clientId: ClientId, baseHandler: BaseGameHandler) {
+export function handleMessage(message: RawData, clientId: ID, baseHandler: BaseGameHandler) {
 	if (!Buffer.isBuffer(message)) {
 		throw new Error('Invalid message');
 	}

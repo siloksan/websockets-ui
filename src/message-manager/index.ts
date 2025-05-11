@@ -1,8 +1,8 @@
-import { ClientId } from '../types';
+import { ID } from '../types';
 import WebSocket from 'ws';
 
 export class MessageManager {
-	private readonly clients: Map<ClientId, WebSocket>;
+	private readonly clients: Map<ID, WebSocket>;
 	private static instance: MessageManager;
 	constructor() {
 		this.clients = new Map();
@@ -15,15 +15,15 @@ export class MessageManager {
 		return this.instance;
 	}
 
-	registerClient(clientId: ClientId, client: WebSocket) {
+	registerClient(clientId: ID, client: WebSocket) {
 		this.clients.set(clientId, client);
 	}
 
-	unregisterClient(clientId: ClientId) {
+	unregisterClient(clientId: ID) {
 		this.clients.delete(clientId);
 	}
 
-	sendMessage(clientId: ClientId, message: string) {
+	sendMessage(clientId: ID, message: string) {
 		const client = this.clients.get(clientId);
 		if (client) {
 			client.send(message);

@@ -2,8 +2,7 @@ import {
 	ATTACK_STATUS,
 	AttackReq,
 	AttackType,
-	ClientId,
-	GameId,
+	ID,
 	PlayerShipsData,
 	Position,
 	RandomAttackDataReq,
@@ -130,7 +129,7 @@ export class AttackHandler {
 		this.launchHandler.finishGame(currentGame);
 	}
 
-	private getCurrentGameData(gameId: GameId) {
+	private getCurrentGameData(gameId: ID) {
 		const currentGame = this.ships.get(gameId);
 
 		if (isNullable(currentGame)) {
@@ -139,7 +138,7 @@ export class AttackHandler {
 		return currentGame;
 	}
 
-	private getOpponent(currentGame: PlayerShipsData[], clientId: ClientId) {
+	private getOpponent(currentGame: PlayerShipsData[], clientId: ID) {
 		const oppositePlayer = currentGame.filter((player) => player.indexPlayer !== clientId)[0];
 
 		if (isNullable(oppositePlayer)) {
@@ -235,7 +234,7 @@ export class AttackHandler {
 		opponentStorage: PlayerShipsData,
 		ship: Ship,
 		shot: Position,
-		indexPlayer: ClientId
+		indexPlayer: ID
 	) {
 		const surroundedShipCells = new Set<string>();
 		const { x: startX, y: startY } = ship.position;
@@ -298,7 +297,7 @@ export class AttackHandler {
 		surroundedShipCells: Set<string>,
 		opponentStorage: PlayerShipsData,
 		gamesStorage: PlayerShipsData[],
-		indexPlayer: ClientId
+		indexPlayer: ID
 	) {
 		surroundedShipCells.forEach((cell) => {
 			const parsedCell: PositionStatus = JSON.parse(cell);

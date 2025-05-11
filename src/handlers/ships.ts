@@ -1,10 +1,10 @@
 import { DataStorage } from '../data-storage';
-import { AddShipsReq, ClientId, PlayerShipsData } from '../types';
+import { AddShipsReq, ID, PlayerShipsData } from '../types';
 
 export class ShipsHandler {
 	private readonly ships = DataStorage.getInstance().ships;
 
-	public addShips(data: AddShipsReq, clientId: ClientId) {
+	public addShips(data: AddShipsReq, clientId: ID) {
 		const { gameId } = data;
 
 		const shipsStorage: PlayerShipsData = {

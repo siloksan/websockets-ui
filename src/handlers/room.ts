@@ -1,7 +1,8 @@
-import { AddUserToRoomReq, ClientId, CreateGameRes, Room, TYPES_OF_MESSAGES } from '../types';
+import { AddUserToRoomReq, ID, CreateGameRes, Room, TYPES_OF_MESSAGES } from '../types';
 import { isNullable } from '../validators/common';
 import { DataStorage } from '../data-storage';
 import { MessageManager } from '../message-manager';
+import { randomUUID } from 'node:crypto';
 
 export class RoomHandler {
 	private readonly users = DataStorage.getInstance().users;
@@ -14,17 +15,17 @@ export class RoomHandler {
 		);
 	};
 
-	public createRoom(clientId: ClientId) {
+	public createRoom(clientId: ID) {
 		const user = this.users.get(clientId);
 		if (isNullable(user)) {
 			this.messageManager.sendMessage(clientId, JSON.stringify({ error: 'User not found' }));
 		} else {
-			const room = { roomId: Date.now(), roomUsers: [{ name: user.name, index: user.index }] };
+			const room = { roomId: Date.now(), roomUsers: [{ name: user.name, index: user.uuid }] };
 			this.rooms.push(room);
 		}
 	}
 
-	public addUserToRoom(data: AddUserToRoomReq, clientId: ClientId) {
+	public addUserToRoom(data: AddUserToRoomReq, clientId: ID) {
 		const { indexRoom } = data;
 		const room = this.rooms.find((room) => room.roomId === indexRoom);
 		const user = this.users.get(clientId);
@@ -38,17 +39,17 @@ export class RoomHandler {
 		}
 	}
 
-	private readonly checkUserInRoom = (room: Room, clientId: ClientId) => {
+	private readonly checkUserInRoom = (room: Room, clientId: ID) => {
 		const currentUser = room.roomUsers.find((user) => user.index === clientId);
 		return !isNullable(currentUser);
 	};
 
 	public readonly createGame = () => {
-		this.rooms = this.rooms.filter((room, idx) => {
+		this.rooms = this.rooms.filter((room) => {
 			if (room.roomUsers.length === 2) {
 				room.roomUsers.forEach((user) => {
 					const newGameData: CreateGameRes = {
-						idGame: `GameId-${idx}`,
+						idGame: randomUUID(),
 						idPlayer: user.index,
 					};
 
@@ -73,7 +74,7 @@ export class RoomHandler {
 		this.rooms = this.rooms.filter((room) => room.roomId !== roomId);
 	};
 
-	public readonly removeUserInRoom = (clientId: ClientId) => {
+	public readonly removeUserInRoom = (clientId: ID) => {
 		this.rooms.some((room) => {
 			let userRoomIndex: number | null = null;
 			room.roomUsers.some((user, index) => {
