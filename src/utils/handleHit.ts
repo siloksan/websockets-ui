@@ -14,13 +14,15 @@ type OccupiedPositions = Set<string>
 
 
 interface BotState {
-    opponentIsInjured: boolean;
+    isOpponensShipDamaged: boolean;
     maxLenghtLivingShips: number;
+    currentDirrectionOfAttack: DirectionType | null;
+    lastShot: Position | null;
 }
 
-// if bootState.opponentIs === true, call this function
+// if bootState.isOpponensShipDamaged === true and  bootState.currentDirrectionOfAttack === null, call this function
 
-export function getNextShoot(positionHit: Position, occupiedPosition: OccupiedPositions, botState: BotState) {
+export function getShotCoordinatesOnDamagedShip(positionHit: Position, occupiedPosition: OccupiedPositions, botState: BotState) {
     let nextBestShoot: Position | null = null;
     let isImPossibleShot = false;
 
@@ -44,9 +46,8 @@ export function getNextShoot(positionHit: Position, occupiedPosition: OccupiedPo
             if (shift === 1) {
                 nextBestShoot = nextPosition;
             }
-
+        
             isImPossibleShot = occupiedPosition.has(JSON.stringify(nextPosition))
-                        
             shift += 1;
         }
 
@@ -54,4 +55,32 @@ export function getNextShoot(positionHit: Position, occupiedPosition: OccupiedPo
     }
 
     return nextBestShoot;
+}
+
+export function getRandomPosition(boardSize: number, occupiedPosition: OccupiedPositions) {
+    let position: Position
+
+    do {
+        position = {
+            x: Math.floor(Math.random() * boardSize),
+            y: Math.floor(Math.random() * boardSize),
+        }
+    } while (occupiedPosition.has(JSON.stringify(position)))
+
+    return position;
+}
+
+// if bootState.currentDirrectionOfAttack !== null, call this function
+export function getShotCoordinatesOnDamagedShipWithKnownDirrection(lastShot: Position, direction: DirectionType) {
+    const quantity = direction === DIRECTIONS.LEFT || direction === DIRECTIONS.UP ? -1 : 1;
+    let nextCoordinateX = lastShot.x;
+    let nextCoordinateY = lastShot.y;
+
+    if (direction === DIRECTIONS.LEFT || direction === DIRECTIONS.RIGHT) {
+        nextCoordinateX = lastShot.x + quantity;
+    } else {
+        nextCoordinateY = lastShot.y + quantity;
+    }
+
+    return { x: nextCoordinateX, y: nextCoordinateY };
 }
