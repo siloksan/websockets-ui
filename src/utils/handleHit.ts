@@ -21,16 +21,18 @@ interface BotState {
 // if bootState.opponentIs === true, call this function
 
 export function getNextShoot(positionHit: Position, occupiedPosition: OccupiedPositions, botState: BotState) {
-    let nextBestShoot: Position;
+    let nextBestShoot: Position | null = null;
+    let isImPossibleShot = false;
 
-    Object.values(DIRECTIONS).forEach((direction) => {
+    const arrayDirrections = Object.values(DIRECTIONS)
+    for (let i = 0; i < arrayDirrections.length; i += 1) {
+        const direction = arrayDirrections[i] as DirectionType;
         let shift = 1;
         const quantity = direction === DIRECTIONS.LEFT || direction === DIRECTIONS.UP ? -1 : 1;
         let nextCoordinateX = positionHit.x;
         let nextCoordinateY = positionHit.y;
-        let isPossibleShot = true;
 
-        while (shift < botState.maxLenghtLivingShips && isPossibleShot) {
+        while (shift < botState.maxLenghtLivingShips && !isImPossibleShot) {
             if (direction === DIRECTIONS.LEFT || direction === DIRECTIONS.RIGHT) {
                 nextCoordinateX = positionHit.x + (shift * quantity);
             } else {
@@ -43,12 +45,13 @@ export function getNextShoot(positionHit: Position, occupiedPosition: OccupiedPo
                 nextBestShoot = nextPosition;
             }
 
-            isPossibleShot = occupiedPosition.has(JSON.stringify(nextPosition))
+            isImPossibleShot = occupiedPosition.has(JSON.stringify(nextPosition))
+                        
             shift += 1;
         }
 
-        break;
-    })
+        if (isImPossibleShot) continue;
+    }
 
     return nextBestShoot;
 }
