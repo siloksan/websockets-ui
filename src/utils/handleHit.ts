@@ -11,8 +11,6 @@ type DirectionType = keyof  typeof DIRECTIONS;
 
 type OccupiedPositions = Set<string>
 
-
-
 interface BotState {
     isOpponensShipDamaged: boolean;
     maxLenghtLivingShips: number;
@@ -20,7 +18,7 @@ interface BotState {
     lastShot: Position | null;
 }
 
-// if bootState.isOpponensShipDamaged === true and  bootState.currentDirrectionOfAttack === null, call this function
+// if botState.isOpponensShipDamaged === true and  bootState.currentDirrectionOfAttack === null, call this function
 
 export function getShotCoordinatesOnDamagedShip(positionHit: Position, occupiedPosition: OccupiedPositions, botState: BotState) {
     let nextBestShoot: Position | null = null;
@@ -70,7 +68,7 @@ export function getRandomPosition(boardSize: number, occupiedPosition: OccupiedP
     return position;
 }
 
-// if bootState.currentDirrectionOfAttack !== null, call this function
+// if botState.currentDirrectionOfAttack !== null, call this function
 export function getShotCoordinatesOnDamagedShipWithKnownDirrection(lastShot: Position, direction: DirectionType) {
     const quantity = direction === DIRECTIONS.LEFT || direction === DIRECTIONS.UP ? -1 : 1;
     let nextCoordinateX = lastShot.x;
