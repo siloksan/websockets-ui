@@ -1,3 +1,4 @@
+import { DirectionType } from '../constants';
 import WebSocket from 'ws';
 
 export const TYPES_OF_MESSAGES = {
@@ -188,3 +189,40 @@ export interface UserWins {
 	user: string;
 	wins: number;
 }
+
+// --------------
+
+export type GamesStorage = Map<GameId, GameData>
+
+type GameData = SingleGameData | PvPGameData;
+
+interface PvPGameData {
+	gameId: GameId;
+	ships: Ship[];
+}
+
+
+export interface PlayerData {
+    playerId: string;
+	turn: boolean;	
+	detectedOpponentsCells: DetectedCells;
+	shotShips: Map<number, ShotShips>;
+	ships: Ship[];
+	hits: number;
+}
+
+interface BotData {
+    isOpponensShipDamaged: boolean;
+    maxLenghtLivingShips: number;
+    currentDirrectionOfAttack: DirectionType | null;
+    lastShot: Position | null;
+	detectedPlayerCells: DetectedCells;
+}
+
+export interface SingleGameData {
+    gameId: GameId;
+    player: PlayerData;
+    botData: BotData;
+}
+
+export type DetectedCells = Set<string>;

@@ -7,7 +7,7 @@ const DIRECTIONS = {
     DOWN: 'DOWN',
 } as const;
 
-type DirectionType = keyof  typeof DIRECTIONS;
+export type DirectionType = keyof  typeof DIRECTIONS;
 
 type OccupiedPositions = Set<string>
 
