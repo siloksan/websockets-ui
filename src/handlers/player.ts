@@ -67,6 +67,7 @@ export class PlayerHandler {
 
 		if (!isNullable(user)) {
 			user.clientId = null;
+			console.log('user: ', user);
 		}
 	}
 }

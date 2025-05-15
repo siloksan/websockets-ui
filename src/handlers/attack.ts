@@ -28,7 +28,6 @@ export class AttackHandler {
 
 	constructor(
 		private readonly turnHandler: TurnHandler,
-
 		private readonly launchHandler: LaunchHandler
 	) {}
 
@@ -60,7 +59,7 @@ export class AttackHandler {
 		}
 
 		// define who shot next
-		if (shotStatus === ATTACK_STATUS.miss || shotStatus === ATTACK_STATUS.killed) {
+		if (shotStatus === ATTACK_STATUS.miss) {
 			this.turnHandler.reverseTurn(currentGame);
 		}
 

@@ -10,7 +10,7 @@ export class LaunchHandler {
 	private readonly users = DataStorage.getInstance().users;
 	private readonly winners = DataStorage.getInstance().winners;
 
-	public checkReadinessOfPlayers(currentGame?: ShipsStorage[]) {
+	checkReadinessOfPlayers(currentGame?: ShipsStorage[]) {
 		if (isNullable(currentGame)) {
 			return false;
 		}

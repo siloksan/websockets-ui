@@ -11,6 +11,7 @@ import { ShipsHandler } from '../handlers/ships';
 import { LaunchHandler } from '../handlers/launch';
 import { AttackHandler } from '../handlers/attack';
 import { TurnHandler } from '../handlers/turn';
+import { SingleGameHandler } from '../handlers/single-game';
 
 const turnHandler = new TurnHandler();
 const launchHandler = new LaunchHandler();
@@ -21,7 +22,8 @@ export const baseGameHandler = new BaseGameHandler(
 	new ShipsHandler(),
 	new LaunchHandler(),
 	new AttackHandler(turnHandler, launchHandler),
-	turnHandler
+	turnHandler,
+	new SingleGameHandler()
 );
 
 export function startWebSocketServer(port: number) {

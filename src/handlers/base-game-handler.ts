@@ -16,6 +16,7 @@ import { AttackHandler } from './attack';
 import { TurnHandler } from './turn';
 import { isNullable } from '../validators/common';
 import { ClientError } from '../utils';
+import { SingleGameHandler } from './single-game';
 
 type RequestOptions = {
 	data?: RequestData;
@@ -33,7 +34,8 @@ export class BaseGameHandler {
 		private readonly shipsHandler: ShipsHandler,
 		private readonly launchHandler: LaunchHandler,
 		private readonly attackHandler: AttackHandler,
-		private readonly turnHandler: TurnHandler
+		private readonly turnHandler: TurnHandler,
+		private readonly singleGameHandler: SingleGameHandler
 	) {
 		this.handlers = new Map([
 			[TYPES_OF_MESSAGES.reg, this.handleRegister.bind(this)],
@@ -43,14 +45,15 @@ export class BaseGameHandler {
 			[TYPES_OF_MESSAGES.add_ships, this.handleAddShips.bind(this)],
 			[TYPES_OF_MESSAGES.attack, this.handleAttack.bind(this)],
 			[TYPES_OF_MESSAGES.randomAttack, this.handleRandomAttack.bind(this)],
+			[TYPES_OF_MESSAGES.single_play, this.handleSingleGame.bind(this)],
 		]);
 	}
 
 	private handleDisconnect({ clientId }: RequestOptions) {
 		this.messageManager.unregisterClient(clientId);
+		this.playerHandler.handleLogout(clientId);
 		this.roomHandler.removeUserInRoom(clientId);
 		this.roomHandler.updateRoom();
-		this.playerHandler.handleLogout(clientId);
 	}
 
 	private handleRegister({ data, clientId }: RequestOptions) {
@@ -107,7 +110,6 @@ export class BaseGameHandler {
 			throw new Error('Invalid data');
 		}
 
-		this.messageManager.broadcastMessage(JSON.stringify(data));
 		this.shipsHandler.addShips(data, clientId);
 		this.launchHandler.startGame(data);
 		this.turnHandler.sendTurnMessage(data.gameId);
@@ -129,5 +131,11 @@ export class BaseGameHandler {
 		}
 
 		this.attackHandler.randomAttack(data);
+	}
+
+	private handleSingleGame({ data, clientId }: RequestOptions) {
+		console.log('single game', data, 'clientId:', clientId);
+
+		this.singleGameHandler.placeBotShips();
 	}
 }

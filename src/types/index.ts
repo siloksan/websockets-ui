@@ -15,18 +15,10 @@ export const TYPES_OF_MESSAGES = {
 	turn: 'turn',
 	randomAttack: 'randomAttack',
 	finish: 'finish',
+	single_play: 'single_play',
 } as const;
 
 export type TypeOfMessage = keyof typeof TYPES_OF_MESSAGES;
-
-export const SHIPS_TYPES = {
-	small: 'small',
-	medium: 'medium',
-	large: 'large',
-	huge: 'huge',
-} as const;
-
-type ShipType = keyof typeof SHIPS_TYPES;
 
 export const ATTACK_STATUS = {
 	miss: 'miss',
@@ -60,6 +52,7 @@ export type RequestData =
 	| AddShipsReq
 	| AttackReq
 	| RandomAttackDataReq
+	| ''
 	| undefined;
 
 export type ResponseData = UserDataRes | CreateGameRes | TurnRes | UpdateUserWinsResData | FinishGame;
@@ -79,11 +72,6 @@ export interface UserDataRes {
 	errorText: string;
 }
 
-// export interface RoomUser {
-// 	name: string;
-// 	index: ID;
-// }
-
 export interface Room {
 	roomId: ID;
 	roomUsers: UserData[];
@@ -100,6 +88,15 @@ export interface CreateGameRes {
 }
 
 export type WebSocketClients = Map<number, WebSocket>;
+
+export const SHIPS_TYPES = {
+	small: 'small',
+	medium: 'medium',
+	large: 'large',
+	huge: 'huge',
+} as const;
+
+type ShipType = keyof typeof SHIPS_TYPES;
 
 export interface Position {
 	x: number;

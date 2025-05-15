@@ -39,7 +39,6 @@ export class RoomHandler {
 		const { indexRoom } = data;
 		const room = this.rooms.get(indexRoom);
 		const user = this.users.get(clientId);
-		console.log('user: ', user);
 
 		if (isNullable(room) || isNullable(user)) {
 			throw new Error('Room or user not found');
@@ -65,10 +64,11 @@ export class RoomHandler {
 		if (isNullable(room)) {
 			throw new Error('Room not found');
 		}
+		const gameId = randomUUID();
 
 		room.roomUsers.forEach((user) => {
 			const gameData: CreateGameRes = {
-				idGame: randomUUID(),
+				idGame: gameId,
 				idPlayer: user.uuid,
 			};
 

@@ -6,6 +6,7 @@ export class ShipsHandler {
 
 	public addShips(data: AddShipsReq, clientId: ID) {
 		const { gameId } = data;
+		console.log('data: ', data);
 
 		const shipsStorage: PlayerShipsData = {
 			indexPlayer: clientId,

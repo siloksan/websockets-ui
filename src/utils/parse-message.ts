@@ -19,6 +19,7 @@ export function handleMessage(message: RawData, clientId: ID, baseHandler: BaseG
 		throw new Error(`No handler for type: ${type}`);
 	}
 
+	// data may be additionally stringified
 	if (typeof data === 'string') {
 		const parsedData = parseMessage(data);
 
