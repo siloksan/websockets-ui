@@ -121,7 +121,7 @@ export class BaseGameHandler {
 			throw new Error('Invalid data');
 		}
 
-		this.attackHandler.attack(data);
+		this.attackHandler.handleAttackRequest(data);
 	}
 
 	private handleRandomAttack({ data, clientId }: RequestOptions) {

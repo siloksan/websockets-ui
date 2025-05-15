@@ -1,3 +1,4 @@
+import { DirectionType } from '../constants';
 import WebSocket from 'ws';
 import { randomUUID } from 'node:crypto';
 
@@ -103,11 +104,21 @@ export interface Position {
 	y: number;
 }
 
+export const SHIP_STATUS = {
+	UNDAMAGED: 'UNDAMAGED',
+	DAMAGED: 'DAMAGED',
+	SUNKEN: 'SUNKEN',
+} as const;
+
+export type ShipStatus = keyof typeof SHIP_STATUS;
+
 export interface Ship {
 	position: Position;
 	direction: boolean;
 	length: number;
 	type: ShipType;
+	status: ShipStatus;
+	damageCells: Set<string>;
 }
 
 export interface ShipsStorage {
@@ -187,3 +198,41 @@ export interface UserWins {
 	user: string;
 	wins: number;
 }
+
+// --------------
+
+export type GamesStorage = Map<GameId, GameData>
+
+type GameData = SingleGameData | PvPGameData;
+
+interface PvPGameData {
+	gameId: GameId;
+	ships: Ship[];
+}
+
+export interface PlayerData {
+    playerId: string;
+	turn: boolean;	
+	detectedOpponentsCells: DetectedCells;
+	damagedShipsStorage: DamagedShipsStorage;
+	ships: Ship[];
+	hits: number;
+}
+
+interface BotData {
+    isOpponensShipDamaged: boolean;
+    maxLenghtLivingShips: number;
+    currentDirrectionOfAttack: DirectionType | null;
+    lastShot: Position | null;
+	detectedPlayerCells: DetectedCells;
+}
+
+export interface SingleGameData {
+    gameId: GameId;
+    player: PlayerData;
+    botData: BotData;
+}
+
+export type DetectedCells = Set<string>;
+
+export type DamagedShipsStorage = Map<number, Position[]>;
