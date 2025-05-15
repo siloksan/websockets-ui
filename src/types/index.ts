@@ -100,11 +100,21 @@ export interface Position {
 	y: number;
 }
 
+export const SHIP_STATUS = {
+	UNDAMAGED: 'UNDAMAGED',
+	DAMAGED: 'DAMAGED',
+	SUNKEN: 'SUNKEN',
+} as const;
+
+export type ShipStatus = keyof typeof SHIP_STATUS;
+
 export interface Ship {
 	position: Position;
 	direction: boolean;
 	length: number;
 	type: ShipType;
+	status: ShipStatus;
+	damageCells: Set<string>;
 }
 
 export interface ShipsStorage {
@@ -201,12 +211,11 @@ interface PvPGameData {
 	ships: Ship[];
 }
 
-
 export interface PlayerData {
     playerId: string;
 	turn: boolean;	
 	detectedOpponentsCells: DetectedCells;
-	shotShips: Map<number, ShotShips>;
+	damagedShipsStorage: DamagedShipsStorage;
 	ships: Ship[];
 	hits: number;
 }
@@ -226,3 +235,5 @@ export interface SingleGameData {
 }
 
 export type DetectedCells = Set<string>;
+
+export type DamagedShipsStorage = Map<number, Position[]>;

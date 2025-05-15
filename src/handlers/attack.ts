@@ -52,7 +52,7 @@ export class AttackHandler {
 	}
 
 	private readonly botIncomingAttackHandler = (data: AttackReq, game: SingleGameData) => {
-		this.botHandler.handleAtackRequest(data, game)
+		this.botHandler.handleAtackRequest(data, game);
 	}
 
 	private readonly attack = (data: AttackReq) => {
