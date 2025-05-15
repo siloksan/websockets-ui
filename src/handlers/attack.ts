@@ -8,7 +8,7 @@ import {
 	RandomAttackDataReq,
 	Ship,
 	ShotShips,
-	SingleGameData,
+	// SingleGameData,
 	TYPES_OF_MESSAGES,
 } from '../types';
 import { MessageManager } from '../message-manager';
@@ -16,7 +16,7 @@ import { DataStorage } from '../data-storage';
 import { isInRange, isNullable } from '../validators/common';
 import { TurnHandler } from './turn';
 import { LaunchHandler } from './launch';
-import { BotHandler } from './bot-handler';
+// import { BotHandler } from './bot-handler';
 
 type ShotResult = [AttackType, Ship] | [AttackType];
 
@@ -27,31 +27,31 @@ interface PositionStatus extends Position {
 export class AttackHandler {
 	private readonly messageManager = MessageManager.getInstance();
 	private readonly ships = DataStorage.getInstance().ships;
-	readonly #gamesStorage = DataStorage.getInstance().gamesStorge;
+	private readonly gamesStorage = DataStorage.getInstance().gamesStorage;
 
 	constructor(
 		private readonly turnHandler: TurnHandler,
-		private readonly botHandler: BotHandler,
+		// private readonly botHandler: BotHandler,
 		private readonly launchHandler: LaunchHandler
 	) {}
 
 	public handleAttackRequest = (data: AttackReq) => {
-		const currentGame = this.#gamesStorage.get(data.gameId);
+		const currentGame = this.gamesStorage.get(data.gameId);
 
 		if (!currentGame) {
 			throw new Error('The game with this ID was not found.');
 		}
 
 		if ('botData' in currentGame) {
-			this.botIncomingAttackHandler(data, currentGame);
+			// this.botIncomingAttackHandler(data, currentGame);
 		} else {
 			this.attack(data);
 		}
 	};
 
-	private readonly botIncomingAttackHandler = (data: AttackReq, game: SingleGameData) => {
-		this.botHandler.handleAtackRequest(data, game);
-	};
+	// private readonly botIncomingAttackHandler = (data: AttackReq, game: SingleGameData) => {
+	// 	this.botHandler.handleAtackRequest(data, game);
+	// };
 
 	private readonly attack = (data: AttackReq) => {
 		const { gameId, indexPlayer, x, y } = data;

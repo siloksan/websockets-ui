@@ -201,18 +201,18 @@ export interface UserWins {
 
 // --------------
 
-export type GamesStorage = Map<GameId, GameData>
+export type GamesStorage = Map<ID, GameData>;
 
 type GameData = SingleGameData | PvPGameData;
 
 interface PvPGameData {
-	gameId: GameId;
+	gameId: ID;
 	ships: Ship[];
 }
 
 export interface PlayerData {
-    playerId: string;
-	turn: boolean;	
+	playerId: string;
+	turn: boolean;
 	detectedOpponentsCells: DetectedCells;
 	damagedShipsStorage: DamagedShipsStorage;
 	ships: Ship[];
@@ -220,17 +220,17 @@ export interface PlayerData {
 }
 
 interface BotData {
-    isOpponensShipDamaged: boolean;
-    maxLenghtLivingShips: number;
-    currentDirrectionOfAttack: DirectionType | null;
-    lastShot: Position | null;
+	isOpponensShipDamaged: boolean;
+	maxLenghtLivingShips: number;
+	currentDirrectionOfAttack: DirectionType | null;
+	lastShot: Position | null;
 	detectedPlayerCells: DetectedCells;
 }
 
 export interface SingleGameData {
-    gameId: GameId;
-    player: PlayerData;
-    botData: BotData;
+	gameId: ID;
+	player: PlayerData;
+	botData: BotData;
 }
 
 export type DetectedCells = Set<string>;

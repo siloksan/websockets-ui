@@ -1,4 +1,4 @@
-import { Position, Ship } from '../types';
+import { Position, Ship, SHIP_STATUS } from '../types';
 import { CELL_STATUS, CellStatus, ShipsInPort, ShipType } from '../handlers/single-game';
 
 export class ShipsPlacer {
@@ -58,8 +58,8 @@ export class ShipsPlacer {
 		return tempOccupiedPositions;
 	};
 
-	readonly #checkAvailability = (tempOccupiedPositions: Position[], occupiedPositions: Set<Position>) => {
-		return !tempOccupiedPositions.some((position) => occupiedPositions.has(position));
+	readonly #checkAvailability = (tempOccupiedPositions: Position[], occupiedPositions: Set<string>) => {
+		return !tempOccupiedPositions.some((position) => occupiedPositions.has(JSON.stringify(position)));
 	};
 
 	readonly #placeShipOnBoard = (
@@ -72,13 +72,13 @@ export class ShipsPlacer {
 		while (occupiedPlace < shipSize) {
 			if (direction) {
 				// vertical direction
-				const row = board[firstShipPosition.x + occupiedPlace];
-				if (row) row[firstShipPosition.y] = CELL_STATUS.SHIP;
+				const row = board[firstShipPosition.y + occupiedPlace];
+				if (row) row[firstShipPosition.x] = CELL_STATUS.SHIP;
 			} else {
 				// horizontal direction
-				const row = board[firstShipPosition.x];
+				const row = board[firstShipPosition.y];
 				if (row) {
-					row[firstShipPosition.y + occupiedPlace] = CELL_STATUS.SHIP;
+					row[firstShipPosition.x + occupiedPlace] = CELL_STATUS.SHIP;
 				}
 			}
 
@@ -87,7 +87,7 @@ export class ShipsPlacer {
 	};
 
 	public readonly autoPlaceShips = () => {
-		const occupiedPositions: Set<Position> = new Set();
+		const occupiedPositions: Set<string> = new Set();
 		const ownBoard = this.#createEmptyBoard(this.boardSize);
 
 		this.shipsInPort.forEach((ship) => {
@@ -106,9 +106,17 @@ export class ShipsPlacer {
 				}
 
 				// write each position include cells around the ship in the set
-				tempOccupiedPositions.forEach((position) => occupiedPositions.add(position));
+				tempOccupiedPositions.forEach((position) => occupiedPositions.add(JSON.stringify(position)));
+				const shipData: Ship = {
+					position: firstShipPosition,
+					direction,
+					length: ship.length,
+					type: ship.type,
+					damageCells: new Set(),
+					status: SHIP_STATUS.UNDAMAGED,
+				};
 				// save ship in ships array
-				this.ships.push({ position: firstShipPosition, direction, length: ship.length, type: ship.type });
+				this.ships.push(shipData);
 
 				// TODO: place ship on the board
 				this.#placeShipOnBoard(firstShipPosition, direction, ship.length, ownBoard);
@@ -119,4 +127,6 @@ export class ShipsPlacer {
 		console.log('this.ships: ', this.ships);
 		console.table(ownBoard);
 	};
+
+	private getAllAvailablePositionsForShip(direction: true, shipSize: number, occupiedPositions: Set<string>) {}
 }
