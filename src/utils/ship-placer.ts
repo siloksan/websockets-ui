@@ -3,9 +3,7 @@ import { CELL_STATUS, CellStatus, ShipType } from '../handlers/single-game';
 
 export class ShipsPlacer {
 	constructor(
-		readonly boardSize: number,
 		readonly shipsInPort: ShipType,
-		readonly ships: Ship[]
 	) {}
 
 	private readonly createEmptyBoard = (boardSize: number) => {
@@ -18,42 +16,54 @@ export class ShipsPlacer {
 	 */
 	readonly getShipDirection = () => Math.random() > 0.5;
 
-	readonly getOccupiedPositions = (firstShipPosition: Position, direction: boolean, shipSize: number, boardSize: number) => {
+	readonly getOccupiedPositions = (firstShipPosition: Position, direction: boolean, shipSize: number) => {
 		const tempOccupiedPositions: Position[] = [];
-		if (direction) {
+
+		// write each position include cells around the ship
+		if (!direction) {
 			// vertical direction
-			// if ship is in the first column, x will be 0
-			let x = firstShipPosition.x === 0 ? firstShipPosition.x : firstShipPosition.x - 1;
-			while (x < firstShipPosition.x + 2 && x < boardSize) {
-				let y = firstShipPosition.y - 1;
-				// write each position include cells around the ship
-				while (y < firstShipPosition.y + shipSize + 1 && y < boardSize) {
-					tempOccupiedPositions.push({ x, y });
-					y += 1;
+			for (let x = firstShipPosition.x - 1; x <= firstShipPosition.x + 1; x += 1) {
+				for (let y = firstShipPosition.y - 1; y <= firstShipPosition.y + shipSize + 1; y += 1) {
+					if (x > 0 && y > 0) {
+					tempOccupiedPositions.push({ x, y })
+					}
 				}
-				x += 1;
 			}
 		} else {
 			// horizontal direction
-			// if ship is in the first row, y will be 0
-			let y = firstShipPosition.y === 0 ? firstShipPosition.y : firstShipPosition.y - 1;
-			while (y < firstShipPosition.y + 2 && y < boardSize) {
-				let x = firstShipPosition.x - 1;
-				// write each position include cells around the ship
-				while (x < firstShipPosition.x + shipSize + 1 && x < boardSize) {
-					tempOccupiedPositions.push({ x, y });
-					x += 1;
-				}
-				y += 1;
+			for (let y = firstShipPosition.y - 1; y <= firstShipPosition.y + 1; y += 1) {
+				for (let x = firstShipPosition.x - 1; y <= firstShipPosition.x + shipSize + 1; x += 1) {
+					if (x > 0 && y > 0) {
+						tempOccupiedPositions.push({ x, y })
+					}				}
 			}
 		}
 
 		return tempOccupiedPositions;
 	};
 
-		readonly checkAvailability = (tempOccupiedPositions: Position[], availableCells: Set<string>) => {
-		return tempOccupiedPositions.every((position) => availableCells.has(JSON.stringify(position)));
+		readonly checkAvailability = (firstShipPosition: Position, direction: boolean, shipSize: number, availableCells: Set<string>) => {
+		if (!direction) {
+		// vertical direction
+			for (let x = firstShipPosition.x - 1; x <= firstShipPosition.x + 1; x += 1) {
+				for (let y = firstShipPosition.y - 1; y <= firstShipPosition.y + shipSize + 1; y += 1) {
+					
+				}
+			}
+		} else {
+			// horizontal direction
+			for (let y = firstShipPosition.y - 1; y <= firstShipPosition.y + 1; y += 1) {
+				for (let x = firstShipPosition.x - 1; y <= firstShipPosition.x + shipSize + 1; x += 1) {
+					if (x > 0 && y > 0) {
+						tempOccupiedPositions.push({ x, y })
+					}				}
+			}
+		}
 	};
+
+	private readonly checkCellAvailability = (cell: Position, availableCells: Set<string>) => {
+		
+	}
 
 	private readonly placeShipOnBoard = (
 		firstShipPosition: Position,
@@ -82,15 +92,15 @@ export class ShipsPlacer {
 	public readonly getPlacedShips = (boardSize: number) => {
 		const ships: Ship[] = [];
 		const board = this.createEmptyBoard(boardSize);
-		const availableCells = this.getBoardCells(this.boardSize);
+		const availableCells = this.getBoardCells(boardSize);
 
 		this.shipsInPort.forEach((ship) => {
 			let shipsInDock = ship.count;
 			while (shipsInDock > 0) {
 				const direction = this.getShipDirection();
-				const availableFirstPositionsForShip = this.getAllAvailablePositionsForShip(direction, ship.length, availableCells, boardSize);
+				const availableFirstPositionsForShip = this.getAllAvailablePositionsForShip(direction, ship.length, availableCells);
 				const randomAvailableFirstPosition = this.getRandomAvailablePosition(availableFirstPositionsForShip);
-				const occupiedShipsCells = this.getOccupiedPositions(randomAvailableFirstPosition, direction, ship.length, boardSize);
+				const occupiedShipsCells = this.getOccupiedPositions(randomAvailableFirstPosition, direction, ship.length);
 				// delete each ship's occupied position include cells around the ship from availableCells
 				occupiedShipsCells.forEach((position) => availableCells.delete(JSON.stringify(position)));
 
@@ -112,17 +122,18 @@ export class ShipsPlacer {
 			}
 		});
 
+		console.table(board)
 		return ships;
 	};
 
-	private getAllAvailablePositionsForShip(direction: boolean, shipSize: number, availableCells: Set<string>, boardSize: number) {
-		const availableCellsForShip: Position[] = [];
+	private getAllAvailablePositionsForShip(direction: boolean, shipSize: number, availableCells: Set<string>) {
+		// const availableCellsForShip: Position[] = [];
 
 		// check all available cells and if it suit add to availableCellsForShip
-		Array.from(availableCells).forEach((cell) => {
+		const availableCellsForShip: Position[] = Array.from(availableCells).forEach((cell) => {
 			const cellCoordinate = JSON.parse(cell) as Position;
 
-			const tempOccupiedPositions = this.getOccupiedPositions(cellCoordinate, direction, shipSize, boardSize);
+			const tempOccupiedPositions = this.getOccupiedPositions(cellCoordinate, direction, shipSize);
 
 			const isAvailablePosition = this.checkAvailability(tempOccupiedPositions, availableCells);
 

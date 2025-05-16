@@ -1,3 +1,4 @@
+// import { ShipsPlacer } from '../utils/ship-placer';
 import { ShipsPlacer } from '../utils/ship-placer';
 import { Ship, SHIPS_TYPES } from '../types';
 
@@ -12,7 +13,7 @@ export type ShipType = typeof SHIPS_IN_PORT;
 
 export type ShipsInPort = (typeof SHIPS_IN_PORT)[number];
 
-const BOARD_SIZE = 10;
+// const BOARD_SIZE = 10;
 
 export const CELL_STATUS = {
 	EMPTY: 0,
@@ -34,23 +35,26 @@ export interface BotState {
 }
 
 export class SingleGameHandler {
-	readonly #gameState: BotState;
-	readonly #shipsPlacer: ShipsPlacer;
+	// readonly #gameState: BotState;
+	// readonly #shipsPlacer: ShipsPlacer;
 
 	constructor() {
-		this.#gameState = {
-			ships: [],
-			activeShips: 0,
-			// ownBoard: [],
-			// opponentBoard: this.#createEmptyBoard(BOARD_SIZE),
-			turn: false,
-			// shotsStorage: new Set(),
-		};
+		const shipPlacer = new ShipsPlacer(SHIPS_IN_PORT);
 
-		this.#shipsPlacer = new ShipsPlacer(BOARD_SIZE, SHIPS_IN_PORT, this.#gameState.ships);
+		shipPlacer.getPlacedShips(10)
+		// this.#gameState = {
+		// 	ships: [],
+		// 	activeShips: 0,
+		// 	// ownBoard: [],
+		// 	// opponentBoard: this.#createEmptyBoard(BOARD_SIZE),
+		// 	turn: false,
+		// 	// shotsStorage: new Set(),
+		// };
+
+		// this.#shipsPlacer = new ShipsPlacer(BOARD_SIZE, SHIPS_IN_PORT, this.#gameState.ships);
 	}
 
 	public readonly placeBotShips = () => {
-		this.#shipsPlacer.autoPlaceShips();
+		// this.#shipsPlacer.autoPlaceShips();
 	};
 }
