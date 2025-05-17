@@ -1,6 +1,23 @@
-// import { ShipsPlacer } from '../utils/ship-placer';
-import { ShipsPlacer } from '../utils/ship-placer';
-import { Ship, SHIPS_TYPES } from '../types';
+import { DataStorage } from '../data-storage';
+import {
+	AddShipsReq,
+	AttackReq,
+	BotData,
+	CreateGameRes,
+	GameStartRes,
+	ID,
+	PlayerData,
+	Ship,
+	SHIPS_TYPES,
+	SingleGameData,
+	TurnRes,
+	TYPES_OF_MESSAGES,
+} from '../types';
+import { randomUUID } from 'node:crypto';
+import { MessageManager } from '../message-manager';
+import { isNullable } from '../validators/common';
+import { getShipsLocation } from '../utils/get-ships-location';
+import { BotHandler } from './bot-handler';
 
 export const SHIPS_IN_PORT = [
 	{ type: SHIPS_TYPES.huge, length: 4, count: 1 },
@@ -13,7 +30,7 @@ export type ShipType = typeof SHIPS_IN_PORT;
 
 export type ShipsInPort = (typeof SHIPS_IN_PORT)[number];
 
-// const BOARD_SIZE = 10;
+export const BOARD_SIZE = 10;
 
 export const CELL_STATUS = {
 	EMPTY: 0,
@@ -35,26 +52,124 @@ export interface BotState {
 }
 
 export class SingleGameHandler {
-	// readonly #gameState: BotState;
-	// readonly #shipsPlacer: ShipsPlacer;
+	private readonly storage = DataStorage.getInstance();
+	private readonly messageManager = MessageManager.getInstance();
 
-	constructor() {
-		const shipPlacer = new ShipsPlacer(SHIPS_IN_PORT);
+	constructor(private readonly botHandler: BotHandler) {}
 
-		shipPlacer.getPlacedShips(10)
-		// this.#gameState = {
-		// 	ships: [],
-		// 	activeShips: 0,
-		// 	// ownBoard: [],
-		// 	// opponentBoard: this.#createEmptyBoard(BOARD_SIZE),
-		// 	turn: false,
-		// 	// shotsStorage: new Set(),
-		// };
-
-		// this.#shipsPlacer = new ShipsPlacer(BOARD_SIZE, SHIPS_IN_PORT, this.#gameState.ships);
+	public runSingleGame(clientId: ID) {
+		this.createGame(clientId);
 	}
 
-	public readonly placeBotShips = () => {
-		// this.#shipsPlacer.autoPlaceShips();
+	private readonly createGame = (clientId: ID) => {
+		const user = this.storage.users.get(clientId);
+		if (isNullable(user)) {
+			throw new Error('User not found');
+		}
+
+		const gameId = randomUUID();
+		const gameData: CreateGameRes = {
+			idGame: gameId,
+			idPlayer: user.uuid,
+		};
+
+		this.storage.games.set(gameId, 'single');
+
+		this.messageManager.sendMessage(
+			user.uuid,
+			JSON.stringify({
+				type: TYPES_OF_MESSAGES.create_game,
+				data: JSON.stringify(gameData),
+				id: 0,
+			})
+		);
+	};
+
+	public readonly startGame = (data: AddShipsReq, clientId: ID) => {
+		const gameData = this.getPlayersData(data, clientId);
+		this.storage.singleGames.set(gameData.gameId, gameData);
+		this.sendStartGameMessage(gameData);
+		this.sendTurnMessage(gameData);
+	};
+
+	private readonly getPlayersData = (data: AddShipsReq, clientId: ID) => {
+		const { gameId } = data;
+
+		const playerData: PlayerData = {
+			playerId: clientId,
+			ships: data.ships,
+			turn: true,
+			hits: 0,
+			damagedShipsStorage: new Map(),
+			detectedOpponentsCells: new Set(),
+		};
+
+		const botData: BotData = {
+			playerId: randomUUID(),
+			ships: getShipsLocation(),
+			turn: false,
+			hits: 0,
+			damagedShipsStorage: new Map(),
+			detectedOpponentsCells: new Set(),
+			botState: {
+				currentDirectionOfAttack: null,
+				isOpponentShipDamaged: false,
+				lastShot: null,
+				maxLengthLivingShips: SHIPS_IN_PORT[0].length,
+			},
+		};
+
+		return {
+			gameId,
+			player: playerData,
+			botData,
+		};
+	};
+
+	private readonly sendStartGameMessage = (gameData: SingleGameData) => {
+		const response: GameStartRes = {
+			currentPlayerIndex: gameData.player.playerId,
+			ships: gameData.player.ships,
+		};
+
+		this.messageManager.sendMessage(
+			gameData.player.playerId,
+			JSON.stringify({
+				type: TYPES_OF_MESSAGES.start_game,
+				data: JSON.stringify(response),
+				id: 0,
+			})
+		);
+	};
+
+	private readonly sendTurnMessage = (gameData: SingleGameData) => {
+		const data: TurnRes = {
+			currentPlayer: gameData.player.playerId,
+		};
+		const response = {
+			type: TYPES_OF_MESSAGES.turn,
+			data: JSON.stringify(data),
+			id: 0,
+		};
+
+		this.messageManager.sendMessage(
+			gameData.player.playerId,
+			JSON.stringify({
+				type: TYPES_OF_MESSAGES.turn,
+				data: JSON.stringify(response),
+				id: 0,
+			})
+		);
+	};
+
+	public readonly attackRequestHandler = (data: AttackReq) => {
+		const gameData = this.storage.singleGames.get(data.gameId);
+
+		if (isNullable(gameData)) {
+			throw new Error('Game not found');
+		}
+
+		const response = this.botHandler.getAttackResponse(data, gameData);
+		this.messageManager.sendMessage(data.indexPlayer, JSON.stringify(response));
 	};
 }

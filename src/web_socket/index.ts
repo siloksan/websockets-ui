@@ -1,4 +1,4 @@
-import { logger, ClientError } from '../utils';
+import { ClientError } from '../utils';
 import { randomUUID } from 'node:crypto';
 import WebSocket, { WebSocketServer } from 'ws';
 import { BaseGameHandler } from '../handlers/base-game-handler';
@@ -12,28 +12,34 @@ import { LaunchHandler } from '../handlers/launch';
 import { AttackHandler } from '../handlers/attack';
 import { TurnHandler } from '../handlers/turn';
 import { SingleGameHandler } from '../handlers/single-game';
+import { BotHandler } from '../handlers/bot-handler';
 
+const messageManager = MessageManager.getInstance();
+const playerHandler = new PlayerHandler();
 const turnHandler = new TurnHandler();
 const launchHandler = new LaunchHandler();
+const shipsHandler = new ShipsHandler();
+const roomHandler = new RoomHandler();
+const attackHandler = new AttackHandler(turnHandler, launchHandler);
+const botHandler = new BotHandler();
+const singleGameHandler = new SingleGameHandler(botHandler);
 
 export const baseGameHandler = new BaseGameHandler(
-	new PlayerHandler(),
-	new RoomHandler(),
-	new ShipsHandler(),
-	new LaunchHandler(),
-	new AttackHandler(turnHandler, launchHandler),
+	playerHandler,
+	roomHandler,
+	shipsHandler,
+	launchHandler,
+	attackHandler,
 	turnHandler,
-	new SingleGameHandler()
+	singleGameHandler
 );
 
 export function startWebSocketServer(port: number) {
 	const wsServer = new WebSocketServer({ port });
-	logger(`WebSocket server started on the ${port} port!`);
+	console.log(`WebSocket server started on the ${port} port!`);
 	wsServer.on('connection', (ws) => {
 		const clientId = randomUUID();
-		logger(`WebSocket client with id: ${clientId} connected!`);
-
-		const messageManager = MessageManager.getInstance();
+		console.log(`WebSocket client with id: ${clientId} connected!`);
 
 		messageManager.registerClient(clientId, ws);
 
@@ -67,13 +73,13 @@ export function startWebSocketServer(port: number) {
 
 function handleWSError(ws: WebSocket, messageManager: MessageManager, error: unknown) {
 	if (error instanceof ClientError) {
-		logger(error.message);
+		console.log(error.message);
 		messageManager.sendMessage(error.clientId, error.message);
 	} else if (error instanceof Error) {
-		logger(error.message);
+		console.log(error.message);
 		ws.send(error.message);
 	} else {
-		logger(JSON.stringify(error));
+		console.log(JSON.stringify(error));
 		ws.send(JSON.stringify(error));
 	}
 }

@@ -2,6 +2,7 @@ import { isNonEmptyString, isValidMessage } from '../validators/common';
 import { RequestMessage, RequestData, ID } from '../types';
 import { RawData } from 'ws';
 import { BaseGameHandler } from '../handlers/base-game-handler';
+import { passwordReplace } from './password-replace';
 
 export function handleMessage(message: RawData, clientId: ID, baseHandler: BaseGameHandler) {
 	if (!Buffer.isBuffer(message)) {
@@ -19,6 +20,10 @@ export function handleMessage(message: RawData, clientId: ID, baseHandler: BaseG
 		throw new Error(`No handler for type: ${type}`);
 	}
 
+	console.log(
+		`Server received message from client with id ${clientId}: `,
+		passwordReplace(JSON.stringify(parsedMessage))
+	);
 	// data may be additionally stringified
 	if (typeof data === 'string') {
 		const parsedData = parseMessage(data);

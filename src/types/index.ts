@@ -107,7 +107,7 @@ export interface Position {
 export const SHIP_STATUS = {
 	UNDAMAGED: 'UNDAMAGED',
 	DAMAGED: 'DAMAGED',
-	SUNKEN: 'SUNKEN',
+	KILLED: 'KILLED',
 } as const;
 
 export type ShipStatus = keyof typeof SHIP_STATUS;
@@ -201,17 +201,19 @@ export interface UserWins {
 
 // --------------
 
-export type GamesStorage = Map<ID, GameData>;
+export type GamesStorage = Map<ID, GameType>;
+type GameType = 'pvp' | 'single';
 
-type GameData = SingleGameData | PvPGameData;
+// type GameData = SingleGameData | PvPGameData;
 
-interface PvPGameData {
-	gameId: ID;
-	ships: Ship[];
-}
+// interface PvPGameData {
+// 	gameId: ID;
+// 	ships: Ship[];
+// 	isSingleGame: boolean;
+// }
 
 export interface PlayerData {
-	playerId: string;
+	playerId: ID;
 	turn: boolean;
 	detectedOpponentsCells: DetectedCells;
 	damagedShipsStorage: DamagedShipsStorage;
@@ -219,12 +221,15 @@ export interface PlayerData {
 	hits: number;
 }
 
-interface BotData {
-	isOpponensShipDamaged: boolean;
-	maxLenghtLivingShips: number;
-	currentDirrectionOfAttack: DirectionType | null;
+interface BotState {
+	isOpponentShipDamaged: boolean;
+	maxLengthLivingShips: number;
+	currentDirectionOfAttack: DirectionType | null;
 	lastShot: Position | null;
-	detectedPlayerCells: DetectedCells;
+}
+
+export interface BotData extends PlayerData {
+	botState: BotState;
 }
 
 export interface SingleGameData {

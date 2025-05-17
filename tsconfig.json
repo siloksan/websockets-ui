@@ -23,7 +23,7 @@
 		"baseUrl": "./"
 	},
 	"include": [
-		"src/**/*.ts"
+		"src-copy/**/*.ts"
 	],
 	"exclude": [
 		"node_modules",

@@ -1,3 +1,4 @@
+import { passwordReplace } from '../utils/password-replace';
 import { ID } from '../types';
 import WebSocket from 'ws';
 
@@ -26,6 +27,7 @@ export class MessageManager {
 	sendMessage(clientId: ID, message: string) {
 		const client = this.clients.get(clientId);
 		if (client) {
+			console.log(`Send message to client with clientId - ${clientId} :`, passwordReplace(message));
 			client.send(message);
 		} else {
 			throw new Error(`Client with clientId - ${clientId} not found`);

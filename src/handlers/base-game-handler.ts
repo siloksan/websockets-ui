@@ -17,6 +17,7 @@ import { TurnHandler } from './turn';
 import { isNullable } from '../validators/common';
 import { ClientError } from '../utils';
 import { SingleGameHandler } from './single-game';
+import { DataStorage } from '../data-storage';
 
 type RequestOptions = {
 	data?: RequestData;
@@ -27,6 +28,7 @@ type RequestHandler = (options: RequestOptions) => void;
 export class BaseGameHandler {
 	public readonly handlers: Map<TypeOfMessage, RequestHandler>;
 	private readonly messageManager = MessageManager.getInstance();
+	private readonly storage = DataStorage.getInstance();
 
 	constructor(
 		private readonly playerHandler: PlayerHandler,
@@ -110,9 +112,14 @@ export class BaseGameHandler {
 			throw new Error('Invalid data');
 		}
 
-		this.shipsHandler.addShips(data, clientId);
-		this.launchHandler.startGame(data);
-		this.turnHandler.sendTurnMessage(data.gameId);
+		if (this.storage.games.get(data.gameId) === 'single') {
+			this.singleGameHandler.startGame(data, clientId);
+			this.turnHandler.sendTurnMessage(data.gameId);
+		} else {
+			this.shipsHandler.addShips(data, clientId);
+			this.launchHandler.startGame(data);
+			this.turnHandler.sendTurnMessage(data.gameId);
+		}
 	}
 
 	private handleAttack({ data, clientId }: RequestOptions) {
@@ -121,7 +128,11 @@ export class BaseGameHandler {
 			throw new Error('Invalid data');
 		}
 
-		this.attackHandler.handleAttackRequest(data);
+		if (this.storage.games.get(data.gameId) === 'single') {
+			this.singleGameHandler.attackRequestHandler(data);
+		} else {
+			this.attackHandler.handleAttackRequest(data);
+		}
 	}
 
 	private handleRandomAttack({ data, clientId }: RequestOptions) {
@@ -134,8 +145,10 @@ export class BaseGameHandler {
 	}
 
 	private handleSingleGame({ data, clientId }: RequestOptions) {
-		console.log('single game', data, 'clientId:', clientId);
+		if (data !== '') {
+			throw new Error('Invalid data');
+		}
 
-		this.singleGameHandler.placeBotShips();
+		this.singleGameHandler.runSingleGame(clientId);
 	}
 }

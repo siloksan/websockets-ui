@@ -2,12 +2,10 @@ import { DataStorage } from '../data-storage';
 import { AddShipsReq, ID, PlayerShipsData } from '../types';
 
 export class ShipsHandler {
-	private readonly ships = DataStorage.getInstance().ships;
+	private readonly storage = DataStorage.getInstance();
 
 	public addShips(data: AddShipsReq, clientId: ID) {
 		const { gameId } = data;
-		console.log('data: ', data);
-
 		const shipsStorage: PlayerShipsData = {
 			indexPlayer: clientId,
 			ships: data.ships,
@@ -17,13 +15,13 @@ export class ShipsHandler {
 			turn: false,
 		};
 
-		const users = this.ships.get(gameId);
+		const users = this.storage.ships.get(gameId);
 
 		if (users && users.length < 2) {
 			users.push(shipsStorage);
 		} else {
 			shipsStorage.turn = true;
-			this.ships.set(gameId, [shipsStorage]);
+			this.storage.ships.set(gameId, [shipsStorage]);
 		}
 	}
 }

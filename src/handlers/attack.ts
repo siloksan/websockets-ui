@@ -8,7 +8,6 @@ import {
 	RandomAttackDataReq,
 	Ship,
 	ShotShips,
-	// SingleGameData,
 	TYPES_OF_MESSAGES,
 } from '../types';
 import { MessageManager } from '../message-manager';
@@ -16,7 +15,6 @@ import { DataStorage } from '../data-storage';
 import { isInRange, isNullable } from '../validators/common';
 import { TurnHandler } from './turn';
 import { LaunchHandler } from './launch';
-// import { BotHandler } from './bot-handler';
 
 type ShotResult = [AttackType, Ship] | [AttackType];
 
@@ -27,7 +25,7 @@ interface PositionStatus extends Position {
 export class AttackHandler {
 	private readonly messageManager = MessageManager.getInstance();
 	private readonly ships = DataStorage.getInstance().ships;
-	private readonly gamesStorage = DataStorage.getInstance().gamesStorage;
+	private readonly gamesStorage = DataStorage.getInstance().games;
 
 	constructor(
 		private readonly turnHandler: TurnHandler,
@@ -42,11 +40,7 @@ export class AttackHandler {
 			throw new Error('The game with this ID was not found.');
 		}
 
-		if ('botData' in currentGame) {
-			// this.botIncomingAttackHandler(data, currentGame);
-		} else {
-			this.attack(data);
-		}
+		this.attack(data);
 	};
 
 	// private readonly botIncomingAttackHandler = (data: AttackReq, game: SingleGameData) => {
