@@ -6,6 +6,9 @@ module.exports = {
 	entry: './src/index.ts',
 	target: 'node',
 	externals: [nodeExternals()],
+	resolve: {
+		extensions: ['.ts', '.js', '.json'],
+	},
 	module: {
 		rules: [
 			{
