@@ -2,9 +2,7 @@ import { Position, Ship, SHIP_STATUS } from '../types';
 import { CELL_STATUS, CellStatus, ShipType } from '../handlers/single-game';
 
 export class ShipsPlacer {
-	constructor(
-		readonly shipsInPort: ShipType,
-	) {}
+	constructor(readonly shipsInPort: ShipType) {}
 
 	private readonly createEmptyBoard = (boardSize: number) => {
 		return Array.from({ length: boardSize }, () => Array.from({ length: boardSize }, () => CELL_STATUS.EMPTY));
@@ -25,7 +23,7 @@ export class ShipsPlacer {
 			for (let x = firstShipPosition.x - 1; x <= firstShipPosition.x + 1; x += 1) {
 				for (let y = firstShipPosition.y - 1; y <= firstShipPosition.y + shipSize + 1; y += 1) {
 					if (x > 0 && y > 0) {
-					tempOccupiedPositions.push({ x, y })
+						tempOccupiedPositions.push({ x, y });
 					}
 				}
 			}
@@ -34,36 +32,39 @@ export class ShipsPlacer {
 			for (let y = firstShipPosition.y - 1; y <= firstShipPosition.y + 1; y += 1) {
 				for (let x = firstShipPosition.x - 1; y <= firstShipPosition.x + shipSize + 1; x += 1) {
 					if (x > 0 && y > 0) {
-						tempOccupiedPositions.push({ x, y })
-					}				}
+						tempOccupiedPositions.push({ x, y });
+					}
+				}
 			}
 		}
 
 		return tempOccupiedPositions;
 	};
 
-		readonly checkAvailability = (firstShipPosition: Position, direction: boolean, shipSize: number, availableCells: Set<string>) => {
+	readonly checkAvailability = (
+		firstShipPosition: Position,
+		direction: boolean,
+		shipSize: number,
+		availableCells: Set<string>
+	) => {
 		if (!direction) {
-		// vertical direction
+			// vertical direction
 			for (let x = firstShipPosition.x - 1; x <= firstShipPosition.x + 1; x += 1) {
-				for (let y = firstShipPosition.y - 1; y <= firstShipPosition.y + shipSize + 1; y += 1) {
-					
-				}
+				for (let y = firstShipPosition.y - 1; y <= firstShipPosition.y + shipSize + 1; y += 1) {}
 			}
 		} else {
 			// horizontal direction
 			for (let y = firstShipPosition.y - 1; y <= firstShipPosition.y + 1; y += 1) {
-				for (let x = firstShipPosition.x - 1; y <= firstShipPosition.x + shipSize + 1; x += 1) {
+				for (let x = firstShipPosition.x - 1; x <= firstShipPosition.x + shipSize + 1; x += 1) {
 					if (x > 0 && y > 0) {
-						tempOccupiedPositions.push({ x, y })
-					}				}
+						tempOccupiedPositions.push({ x, y });
+					}
+				}
 			}
 		}
 	};
 
-	private readonly checkCellAvailability = (cell: Position, availableCells: Set<string>) => {
-		
-	}
+	private readonly checkCellAvailability = (cell: Position, availableCells: Set<string>) => {};
 
 	private readonly placeShipOnBoard = (
 		firstShipPosition: Position,
@@ -98,9 +99,17 @@ export class ShipsPlacer {
 			let shipsInDock = ship.count;
 			while (shipsInDock > 0) {
 				const direction = this.getShipDirection();
-				const availableFirstPositionsForShip = this.getAllAvailablePositionsForShip(direction, ship.length, availableCells);
+				const availableFirstPositionsForShip = this.getAllAvailablePositionsForShip(
+					direction,
+					ship.length,
+					availableCells
+				);
 				const randomAvailableFirstPosition = this.getRandomAvailablePosition(availableFirstPositionsForShip);
-				const occupiedShipsCells = this.getOccupiedPositions(randomAvailableFirstPosition, direction, ship.length);
+				const occupiedShipsCells = this.getOccupiedPositions(
+					randomAvailableFirstPosition,
+					direction,
+					ship.length
+				);
 				// delete each ship's occupied position include cells around the ship from availableCells
 				occupiedShipsCells.forEach((position) => availableCells.delete(JSON.stringify(position)));
 
@@ -122,7 +131,7 @@ export class ShipsPlacer {
 			}
 		});
 
-		console.table(board)
+		console.table(board);
 		return ships;
 	};
 
@@ -138,7 +147,7 @@ export class ShipsPlacer {
 			const isAvailablePosition = this.checkAvailability(tempOccupiedPositions, availableCells);
 
 			if (isAvailablePosition) availableCellsForShip.push(cellCoordinate);
-		})
+		});
 
 		return availableCellsForShip;
 	}
@@ -152,13 +161,13 @@ export class ShipsPlacer {
 		}
 
 		return position;
-	}
+	};
 
 	private getBoardCells(boardSize: number) {
 		const boardCells = new Set<string>();
-		for (let x = 0; x < boardSize; x += 1 ) {
+		for (let x = 0; x < boardSize; x += 1) {
 			for (let y = 0; y < boardSize; y += 1) {
-				boardCells.add(JSON.stringify({ x, y }))
+				boardCells.add(JSON.stringify({ x, y }));
 			}
 		}
 

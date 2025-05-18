@@ -16,7 +16,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import { MessageManager } from '../message-manager';
 import { isNullable } from '../validators/common';
-import { getShipsLocation } from '../utils/get-ships-location';
+import { addPropToShips, getShipsLocation, serializeShipData } from '../utils/get-ships-location';
 import { BotHandler } from './bot-handler';
 
 export const SHIPS_IN_PORT = [
@@ -45,10 +45,7 @@ export type CellStatus = (typeof CELL_STATUS)[keyof typeof CELL_STATUS];
 export interface BotState {
 	ships: Ship[];
 	activeShips: number;
-	// ownBoard: CellStatus[][];
-	// opponentBoard: CellStatus[][];
 	turn: boolean; // true - bot, false - player
-	// shotsStorage: Set<string>;
 }
 
 export class SingleGameHandler {
@@ -97,11 +94,12 @@ export class SingleGameHandler {
 
 		const playerData: PlayerData = {
 			playerId: clientId,
-			ships: data.ships,
+			ships: addPropToShips(data.ships),
 			turn: true,
 			hits: 0,
 			damagedShipsStorage: new Map(),
 			detectedOpponentsCells: new Set(),
+			availableCells: this.getAvailableCells(BOARD_SIZE),
 		};
 
 		const botData: BotData = {
@@ -111,6 +109,7 @@ export class SingleGameHandler {
 			hits: 0,
 			damagedShipsStorage: new Map(),
 			detectedOpponentsCells: new Set(),
+			availableCells: this.getAvailableCells(BOARD_SIZE),
 			botState: {
 				currentDirectionOfAttack: null,
 				isOpponentShipDamaged: false,
@@ -129,7 +128,7 @@ export class SingleGameHandler {
 	private readonly sendStartGameMessage = (gameData: SingleGameData) => {
 		const response: GameStartRes = {
 			currentPlayerIndex: gameData.player.playerId,
-			ships: gameData.player.ships,
+			ships: serializeShipData(gameData.player.ships),
 		};
 
 		this.messageManager.sendMessage(
@@ -170,6 +169,26 @@ export class SingleGameHandler {
 		}
 
 		const response = this.botHandler.getAttackResponse(data, gameData);
-		this.messageManager.sendMessage(data.indexPlayer, JSON.stringify(response));
+		response?.forEach((message) => {
+			this.messageManager.sendMessage(data.indexPlayer, JSON.stringify(message));
+		});
+
+		while (gameData.botData.turn) {
+			const response = this.botHandler.botAttack(gameData);
+			response?.forEach((message) => {
+				this.messageManager.sendMessage(data.indexPlayer, JSON.stringify(message));
+			});
+		}
 	};
+
+	private getAvailableCells(boardSize: number) {
+		const boardCells = new Set<string>();
+		for (let x = 0; x < boardSize; x += 1) {
+			for (let y = 0; y < boardSize; y += 1) {
+				boardCells.add(JSON.stringify({ x, y }));
+			}
+		}
+
+		return boardCells;
+	}
 }

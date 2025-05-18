@@ -2,7 +2,7 @@ import { isInRange } from '../validators/common';
 import {
 	ATTACK_STATUS,
 	AttackReq,
-	AttackType,
+	// BotData,
 	DetectedCells,
 	Position,
 	Ship,
@@ -10,6 +10,13 @@ import {
 	SingleGameData,
 	TYPES_OF_MESSAGES,
 } from '../types';
+
+// const DIRECTIONS = {
+// 	LEFT: 'LEFT',
+// 	RIGHT: 'RIGHT',
+// 	UP: 'UP',
+// 	DOWN: 'DOWN',
+// } as const;
 
 export class BotHandler {
 	public getAttackResponse = (data: AttackReq, game: SingleGameData) => {
@@ -24,28 +31,80 @@ export class BotHandler {
 		if (this.checkPositionAlreadyShoot(shotCoordinate, game.player.detectedOpponentsCells)) return;
 
 		this.addPositionToDetectedCellsStorage(shotCoordinate, game.player.detectedOpponentsCells);
+		game.player.availableCells.delete(JSON.stringify(shotCoordinate));
 
-		const damagedShip = this.getDamagedShip(shotCoordinate, game.player.ships);
-		let shotStatus: AttackType = ATTACK_STATUS.miss;
-		this.writeCellToDetectedOpponentsCell(shotCoordinate, game.player.detectedOpponentsCells);
+		const damagedShip = this.getDamagedShip(shotCoordinate, game.botData.ships);
+		game.botData.turn = false;
 
-		if (damagedShip) {
-			this.writeHitToDamagedShipCells(shotCoordinate, damagedShip.damageCells);
-			this.updateShipStatus(damagedShip);
-			shotStatus = this.getShotStatus(damagedShip);
+		if (!damagedShip) {
+			game.botData.turn = true;
+			const responseData = {
+				position: shotCoordinate,
+				currentPlayer: game.player.playerId,
+				status: ATTACK_STATUS.miss,
+			};
+
+			return [
+				{
+					type: TYPES_OF_MESSAGES.attack,
+					data: JSON.stringify(responseData),
+					id: 0,
+				},
+			];
+		}
+
+		this.writeHitToDamagedShipCells(shotCoordinate, damagedShip.damageCells);
+		this.updateShipStatus(damagedShip);
+
+		if (damagedShip.status === SHIP_STATUS.KILLED) {
+			const killedPositions = this.getShipsKilledPositions(damagedShip);
+			const aroundPositions = this.getAroundShipCells(damagedShip);
+			aroundPositions.forEach((position) => {
+				this.addPositionToDetectedCellsStorage(position, game.botData.detectedOpponentsCells);
+			});
+
+			const killedResponse = killedPositions.map((position) => {
+				return {
+					type: TYPES_OF_MESSAGES.attack,
+					data: JSON.stringify({
+						position,
+						currentPlayer: game.player.playerId,
+						status: ATTACK_STATUS.killed,
+					}),
+					id: 0,
+				};
+			});
+
+			const aroundResponse = aroundPositions.map((position) => {
+				return {
+					type: TYPES_OF_MESSAGES.attack,
+					data: JSON.stringify({
+						position,
+						currentPlayer: game.player.playerId,
+						status: ATTACK_STATUS.miss,
+					}),
+					id: 0,
+				};
+			});
+
+			game.botData.turn = false;
+
+			return [...killedResponse, ...aroundResponse];
 		}
 
 		const responseData = {
 			position: shotCoordinate,
 			currentPlayer: game.player.playerId,
-			status: shotStatus,
+			status: ATTACK_STATUS.shot,
 		};
 
-		return {
-			type: TYPES_OF_MESSAGES.attack,
-			data: JSON.stringify(responseData),
-			id: 0,
-		};
+		return [
+			{
+				type: TYPES_OF_MESSAGES.attack,
+				data: JSON.stringify(responseData),
+				id: 0,
+			},
+		];
 	};
 
 	private checkPositionAlreadyShoot(shotCoordinate: Position, detectedCells: DetectedCells) {
@@ -54,10 +113,6 @@ export class BotHandler {
 
 	private addPositionToDetectedCellsStorage(position: Position, detectedCells: DetectedCells) {
 		detectedCells.add(JSON.stringify(position));
-	}
-
-	private writeCellToDetectedOpponentsCell(shotCoordinate: Position, detectedCells: DetectedCells) {
-		detectedCells.add(JSON.stringify(shotCoordinate));
 	}
 
 	private getDamagedShip(shotCoordinate: Position, playerShips: Ship[]) {
@@ -101,11 +156,177 @@ export class BotHandler {
 		}
 	}
 
-	private getShotStatus(ship: Ship) {
-		if (ship.status === SHIP_STATUS.KILLED) {
-			return ATTACK_STATUS.killed;
-		} else {
-			return ATTACK_STATUS.shot;
-		}
+	private getShipsKilledPositions(ship: Ship): Position[] {
+		return Array.from(ship.damageCells).map((stringCell) => JSON.parse(stringCell));
 	}
+
+	private getAroundShipCells(ship: Ship): Position[] {
+		const aroundPositions: Position[] = [];
+
+		// write each position include cells around the ship
+		if (ship.direction) {
+			// vertical direction
+			for (let x = ship.position.x - 1; x <= ship.position.x + 1; x += 1) {
+				for (let y = ship.position.y - 1; y <= ship.position.y + ship.length; y += 1) {
+					const position = { x, y };
+					if (x >= 0 && y >= 0 && !ship.damageCells.has(JSON.stringify(position))) {
+						aroundPositions.push(position);
+					}
+				}
+			}
+		} else {
+			// horizontal direction
+			for (let y = ship.position.y - 1; y <= ship.position.y + 1; y += 1) {
+				for (let x = ship.position.x - 1; x <= ship.position.x + ship.length; x += 1) {
+					const position = { x, y };
+					if (x >= 0 && y >= 0 && !ship.damageCells.has(JSON.stringify(position))) {
+						aroundPositions.push(position);
+					}
+				}
+			}
+		}
+
+		return aroundPositions;
+	}
+
+	// bot attack
+	public botAttack(gameData: SingleGameData) {
+		if (gameData.botData.botState.isOpponentShipDamaged && !gameData.botData.botState.currentDirectionOfAttack) {
+			// this.getShotCoordinatesOnDamagedShip(gameData.botData);
+		}
+
+		const randomShootCoordinate = this.getRandomShotPosition(gameData.player.availableCells);
+
+		return this.getBotAttackResponse(randomShootCoordinate, gameData);
+		// const shotCoordinate = this.getRandomShotPosition(availableCells);
+		// availableCells.delete(JSON.stringify(shotCoordinate));
+		// return shotCoordinate;
+	}
+
+	private getRandomShotPosition(availableCells: DetectedCells): Position {
+		const randomCellIndex = Math.floor(Math.random() * availableCells.size);
+		const randomCell = Array.from(availableCells)[randomCellIndex];
+		if (!randomCell) {
+			throw new Error('There are no available cells');
+		}
+
+		return JSON.parse(randomCell);
+	}
+
+	// private getShotCoordinatesOnDamagedShip(
+	// 	botData: BotData
+	// 	// positionHit: Position,
+	// 	// occupiedPosition: OccupiedPositions,
+	// 	// botState: BotState
+	// ) {
+	// 	let nextBestShoot: Position | null = null;
+	// 	let isImPossibleShot = false;
+
+	// 	const arrayDirrections = Object.values(DIRECTIONS);
+	// 	for (const element of arrayDirrections) {
+	// 		const direction = element as DirectionType;
+	// 		let shift = 1;
+	// 		const quantity = direction === DIRECTIONS.LEFT || direction === DIRECTIONS.UP ? -1 : 1;
+	// 		let nextCoordinateX = positionHit.x;
+	// 		let nextCoordinateY = positionHit.y;
+
+	// 		while (shift < botState.maxLenghtLivingShips && !isImPossibleShot) {
+	// 			if (direction === DIRECTIONS.LEFT || direction === DIRECTIONS.RIGHT) {
+	// 				nextCoordinateX = positionHit.x + shift * quantity;
+	// 			} else {
+	// 				nextCoordinateY = positionHit.y + shift * quantity;
+	// 			}
+
+	// 			const nextPosition = { x: nextCoordinateX, y: nextCoordinateY };
+
+	// 			if (shift === 1) {
+	// 				nextBestShoot = nextPosition;
+	// 			}
+
+	// 			isImPossibleShot = occupiedPosition.has(JSON.stringify(nextPosition));
+	// 			shift += 1;
+	// 		}
+
+	// 		if (isImPossibleShot) continue;
+	// 	}
+
+	// 	return nextBestShoot;
+	// }
+
+	public getBotAttackResponse = (shotCoordinate: Position, game: SingleGameData) => {
+		this.addPositionToDetectedCellsStorage(shotCoordinate, game.botData.detectedOpponentsCells);
+		game.player.availableCells.delete(JSON.stringify(shotCoordinate));
+
+		const damagedShip = this.getDamagedShip(shotCoordinate, game.player.ships);
+		game.botData.turn = false;
+
+		if (!damagedShip) {
+			const responseData = {
+				position: shotCoordinate,
+				currentPlayer: game.botData.playerId,
+				status: ATTACK_STATUS.miss,
+			};
+
+			return [
+				{
+					type: TYPES_OF_MESSAGES.attack,
+					data: JSON.stringify(responseData),
+					id: 0,
+				},
+			];
+		}
+
+		this.writeHitToDamagedShipCells(shotCoordinate, damagedShip.damageCells);
+		this.updateShipStatus(damagedShip);
+
+		if (damagedShip.status === SHIP_STATUS.KILLED) {
+			const killedPositions = this.getShipsKilledPositions(damagedShip);
+			const aroundPositions = this.getAroundShipCells(damagedShip);
+			aroundPositions.forEach((position) => {
+				this.addPositionToDetectedCellsStorage(position, game.botData.detectedOpponentsCells);
+			});
+
+			const killedResponse = killedPositions.map((position) => {
+				return {
+					type: TYPES_OF_MESSAGES.attack,
+					data: JSON.stringify({
+						position,
+						currentPlayer: game.botData.playerId,
+						status: ATTACK_STATUS.killed,
+					}),
+					id: 0,
+				};
+			});
+
+			const aroundResponse = aroundPositions.map((position) => {
+				return {
+					type: TYPES_OF_MESSAGES.attack,
+					data: JSON.stringify({
+						position,
+						currentPlayer: game.botData.playerId,
+						status: ATTACK_STATUS.miss,
+					}),
+					id: 0,
+				};
+			});
+
+			game.botData.turn = true;
+
+			return [...killedResponse, ...aroundResponse];
+		}
+
+		const responseData = {
+			position: shotCoordinate,
+			currentPlayer: game.botData.playerId,
+			status: ATTACK_STATUS.shot,
+		};
+
+		return [
+			{
+				type: TYPES_OF_MESSAGES.attack,
+				data: JSON.stringify(responseData),
+				id: 0,
+			},
+		];
+	};
 }

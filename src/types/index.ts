@@ -1,6 +1,7 @@
 import { DirectionType } from '../constants';
 import WebSocket from 'ws';
 import { randomUUID } from 'node:crypto';
+import { ClientShipData } from '../utils/get-ships-location';
 
 export const TYPES_OF_MESSAGES = {
 	reg: 'reg',
@@ -128,7 +129,7 @@ export interface ShipsStorage {
 
 export interface GameStartRes {
 	currentPlayerIndex: ID;
-	ships: Ship[];
+	ships: ClientShipData[];
 }
 
 // request types
@@ -216,6 +217,7 @@ export interface PlayerData {
 	playerId: ID;
 	turn: boolean;
 	detectedOpponentsCells: DetectedCells;
+	availableCells: Set<string>;
 	damagedShipsStorage: DamagedShipsStorage;
 	ships: Ship[];
 	hits: number;
