@@ -25,27 +25,14 @@ interface PositionStatus extends Position {
 export class AttackHandler {
 	private readonly messageManager = MessageManager.getInstance();
 	private readonly ships = DataStorage.getInstance().ships;
-	private readonly gamesStorage = DataStorage.getInstance().games;
-
 	constructor(
 		private readonly turnHandler: TurnHandler,
-		// private readonly botHandler: BotHandler,
 		private readonly launchHandler: LaunchHandler
 	) {}
 
 	public handleAttackRequest = (data: AttackReq) => {
-		const currentGame = this.gamesStorage.get(data.gameId);
-
-		if (!currentGame) {
-			throw new Error('The game with this ID was not found.');
-		}
-
 		this.attack(data);
 	};
-
-	// private readonly botIncomingAttackHandler = (data: AttackReq, game: SingleGameData) => {
-	// 	this.botHandler.handleAtackRequest(data, game);
-	// };
 
 	private readonly attack = (data: AttackReq) => {
 		const { gameId, indexPlayer, x, y } = data;

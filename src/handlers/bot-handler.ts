@@ -2,7 +2,7 @@ import { isInRange } from '../validators/common';
 import {
 	ATTACK_STATUS,
 	AttackReq,
-	// BotData,
+	BotData,
 	DetectedCells,
 	Position,
 	Ship,
@@ -10,13 +10,7 @@ import {
 	SingleGameData,
 	TYPES_OF_MESSAGES,
 } from '../types';
-
-// const DIRECTIONS = {
-// 	LEFT: 'LEFT',
-// 	RIGHT: 'RIGHT',
-// 	UP: 'UP',
-// 	DOWN: 'DOWN',
-// } as const;
+import { DIRECTIONS } from '../constants';
 
 export class BotHandler {
 	public getAttackResponse = (data: AttackReq, game: SingleGameData) => {
@@ -57,6 +51,8 @@ export class BotHandler {
 		this.updateShipStatus(damagedShip);
 
 		if (damagedShip.status === SHIP_STATUS.KILLED) {
+			game.botData.notKilled -= 1;
+
 			const killedPositions = this.getShipsKilledPositions(damagedShip);
 			const aroundPositions = this.getAroundShipCells(damagedShip);
 			aroundPositions.forEach((position) => {
@@ -191,16 +187,18 @@ export class BotHandler {
 
 	// bot attack
 	public botAttack(gameData: SingleGameData) {
-		if (gameData.botData.botState.isOpponentShipDamaged && !gameData.botData.botState.currentDirectionOfAttack) {
-			// this.getShotCoordinatesOnDamagedShip(gameData.botData);
+		let randomShootCoordinate: Position;
+
+		if (gameData.botData.botState.isOpponentShipDamaged && gameData.botData.botState.lastShot) {
+			randomShootCoordinate = this.getShotCoordinatesOnDamagedShip(
+				gameData.botData,
+				gameData.botData.botState.lastShot
+			);
+		} else {
+			randomShootCoordinate = this.getRandomShotPosition(gameData.player.availableCells);
 		}
 
-		const randomShootCoordinate = this.getRandomShotPosition(gameData.player.availableCells);
-
 		return this.getBotAttackResponse(randomShootCoordinate, gameData);
-		// const shotCoordinate = this.getRandomShotPosition(availableCells);
-		// availableCells.delete(JSON.stringify(shotCoordinate));
-		// return shotCoordinate;
 	}
 
 	private getRandomShotPosition(availableCells: DetectedCells): Position {
@@ -213,45 +211,43 @@ export class BotHandler {
 		return JSON.parse(randomCell);
 	}
 
-	// private getShotCoordinatesOnDamagedShip(
-	// 	botData: BotData
-	// 	// positionHit: Position,
-	// 	// occupiedPosition: OccupiedPositions,
-	// 	// botState: BotState
-	// ) {
-	// 	let nextBestShoot: Position | null = null;
-	// 	let isImPossibleShot = false;
+	private getShotCoordinatesOnDamagedShip(botData: BotData, lastShot: Position) {
+		let nextBestShoot: Position | null = null;
+		let isImPossibleShot = false;
+		const arrayDirections = Object.values(DIRECTIONS);
 
-	// 	const arrayDirrections = Object.values(DIRECTIONS);
-	// 	for (const element of arrayDirrections) {
-	// 		const direction = element as DirectionType;
-	// 		let shift = 1;
-	// 		const quantity = direction === DIRECTIONS.LEFT || direction === DIRECTIONS.UP ? -1 : 1;
-	// 		let nextCoordinateX = positionHit.x;
-	// 		let nextCoordinateY = positionHit.y;
+		for (const direction of arrayDirections) {
+			let shift = 1;
+			const quantity = direction === DIRECTIONS.LEFT || direction === DIRECTIONS.UP ? -1 : 1;
+			let nextCoordinateX = lastShot.x;
+			let nextCoordinateY = lastShot.y;
 
-	// 		while (shift < botState.maxLenghtLivingShips && !isImPossibleShot) {
-	// 			if (direction === DIRECTIONS.LEFT || direction === DIRECTIONS.RIGHT) {
-	// 				nextCoordinateX = positionHit.x + shift * quantity;
-	// 			} else {
-	// 				nextCoordinateY = positionHit.y + shift * quantity;
-	// 			}
+			while (shift < botData.botState.maxLengthNotKilledShip && !isImPossibleShot) {
+				if (direction === DIRECTIONS.LEFT || direction === DIRECTIONS.RIGHT) {
+					nextCoordinateX = lastShot.x + shift * quantity;
+				} else {
+					nextCoordinateY = lastShot.y + shift * quantity;
+				}
 
-	// 			const nextPosition = { x: nextCoordinateX, y: nextCoordinateY };
+				const nextPosition = { x: nextCoordinateX, y: nextCoordinateY };
 
-	// 			if (shift === 1) {
-	// 				nextBestShoot = nextPosition;
-	// 			}
+				if (shift === 1) {
+					nextBestShoot = nextPosition;
+				}
 
-	// 			isImPossibleShot = occupiedPosition.has(JSON.stringify(nextPosition));
-	// 			shift += 1;
-	// 		}
+				isImPossibleShot = botData.detectedOpponentsCells.has(JSON.stringify(nextPosition));
+				shift += 1;
+			}
 
-	// 		if (isImPossibleShot) continue;
-	// 	}
+			if (isImPossibleShot) continue;
+		}
 
-	// 	return nextBestShoot;
-	// }
+		if (!nextBestShoot) {
+			throw new Error('There are no possible shots');
+		}
+
+		return nextBestShoot;
+	}
 
 	public getBotAttackResponse = (shotCoordinate: Position, game: SingleGameData) => {
 		this.addPositionToDetectedCellsStorage(shotCoordinate, game.botData.detectedOpponentsCells);
@@ -280,6 +276,8 @@ export class BotHandler {
 		this.updateShipStatus(damagedShip);
 
 		if (damagedShip.status === SHIP_STATUS.KILLED) {
+			game.player.notKilled -= 1;
+
 			const killedPositions = this.getShipsKilledPositions(damagedShip);
 			const aroundPositions = this.getAroundShipCells(damagedShip);
 			aroundPositions.forEach((position) => {

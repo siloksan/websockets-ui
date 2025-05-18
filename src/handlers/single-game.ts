@@ -4,6 +4,7 @@ import {
 	AttackReq,
 	BotData,
 	CreateGameRes,
+	FinishGame,
 	GameStartRes,
 	ID,
 	PlayerData,
@@ -91,12 +92,13 @@ export class SingleGameHandler {
 
 	private readonly getPlayersData = (data: AddShipsReq, clientId: ID) => {
 		const { gameId } = data;
+		const notKilled = SHIPS_IN_PORT.reduce((acc, ship) => acc + ship.count, 0);
 
 		const playerData: PlayerData = {
 			playerId: clientId,
 			ships: addPropToShips(data.ships),
 			turn: true,
-			hits: 0,
+			notKilled: notKilled,
 			damagedShipsStorage: new Map(),
 			detectedOpponentsCells: new Set(),
 			availableCells: this.getAvailableCells(BOARD_SIZE),
@@ -106,7 +108,7 @@ export class SingleGameHandler {
 			playerId: randomUUID(),
 			ships: getShipsLocation(),
 			turn: false,
-			hits: 0,
+			notKilled: notKilled,
 			damagedShipsStorage: new Map(),
 			detectedOpponentsCells: new Set(),
 			availableCells: this.getAvailableCells(BOARD_SIZE),
@@ -114,7 +116,7 @@ export class SingleGameHandler {
 				currentDirectionOfAttack: null,
 				isOpponentShipDamaged: false,
 				lastShot: null,
-				maxLengthLivingShips: SHIPS_IN_PORT[0].length,
+				maxLengthNotKilledShip: SHIPS_IN_PORT[0].length,
 			},
 		};
 
@@ -179,6 +181,11 @@ export class SingleGameHandler {
 				this.messageManager.sendMessage(data.indexPlayer, JSON.stringify(message));
 			});
 		}
+
+		if (this.getLooser(gameData)) {
+			this.finishGame(gameData);
+			this.updateWinners(gameData);
+		}
 	};
 
 	private getAvailableCells(boardSize: number) {
@@ -190,5 +197,63 @@ export class SingleGameHandler {
 		}
 
 		return boardCells;
+	}
+
+	private getLooser(gameData: SingleGameData) {
+		let looser: PlayerData | BotData | null = null;
+
+		if (gameData.player.notKilled === 0) {
+			looser = gameData.player;
+		} else if (gameData.botData.notKilled === 0) {
+			looser = gameData.botData;
+		}
+
+		return looser;
+	}
+
+	private finishGame(gameData: SingleGameData) {
+		const winner = gameData.player.notKilled === 0 ? gameData.player : gameData.botData;
+
+		const data: FinishGame = {
+			winPlayer: winner.playerId,
+		};
+
+		const response = {
+			type: TYPES_OF_MESSAGES.finish,
+			data: JSON.stringify(data),
+			id: 0,
+		};
+
+		this.messageManager.sendMessage(gameData.player.playerId, JSON.stringify(response));
+	}
+
+	private updateWinners(gameData: SingleGameData) {
+		const winnerData = gameData.botData.notKilled === 0 && gameData.player;
+
+		if (!winnerData) {
+			return;
+		}
+		const player = this.storage.users.get(winnerData.playerId);
+
+		if (!player) {
+			throw new Error('Winner with a such id not found');
+		}
+		const amountOfWins = this.storage.winners.get(player.name);
+
+		if (!amountOfWins) {
+			this.storage.winners.set(player.name, 1);
+		} else {
+			this.storage.winners.set(player.name, amountOfWins + 1);
+		}
+
+		const winners = Array.from(this.storage.winners.entries()).map(([name, wins]) => ({ name, wins }));
+
+		const response = {
+			type: TYPES_OF_MESSAGES.update_winners,
+			data: JSON.stringify(winners),
+			id: 0,
+		};
+
+		this.messageManager.broadcastMessage(JSON.stringify(response));
 	}
 }
