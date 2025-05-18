@@ -1,0 +1,114 @@
+import {
+	AddShipsReq,
+	AddUserToRoomReq,
+	AttackReq,
+	CreateRoomReq,
+	RandomAttackDataReq,
+	RequestData,
+	Ship,
+	SHIPS_TYPES,
+	UserData,
+} from '../../types';
+import { isNonEmptyString, isNullable, isObject } from '../common';
+
+export function validateUserData(data: RequestData): data is UserData {
+	if (!isObject(data)) {
+		return false;
+	}
+
+	if (!('password' in data) || !('name' in data)) {
+		return false;
+	}
+
+	if (isNullable(data.name) || isNullable(data.password)) {
+		return false;
+	}
+
+	if (!isNonEmptyString(data.name) || !isNonEmptyString(data.password)) {
+		return false;
+	}
+
+	return true;
+}
+
+export function validateAddShipsData(data: RequestData): data is AddShipsReq {
+	if (!isObject(data)) {
+		return false;
+	}
+
+	if (!('ships' in data)) {
+		return false;
+	}
+
+	if (!Array.isArray(data.ships)) {
+		return false;
+	}
+
+	const shipsValid = data.ships.every((ship) => validateShipData(ship));
+
+	if (!shipsValid) {
+		return false;
+	}
+
+	if (!('indexPlayer' in data)) {
+		return false;
+	}
+
+	return true;
+}
+
+export function validateShipData(ship: unknown): ship is Ship {
+	if (!isObject(ship)) {
+		return false;
+	}
+
+	if (!('type' in ship)) {
+		return false;
+	}
+
+	if (!isNonEmptyString(ship.type)) {
+		return false;
+	}
+
+	if (!(ship.type in SHIPS_TYPES)) {
+		return false;
+	}
+
+	if (!('position' in ship)) {
+		return false;
+	}
+
+	if (!isObject(ship.position)) {
+		return false;
+	}
+
+	return true;
+}
+
+export function validateCreateRoomData(data: RequestData): data is CreateRoomReq {
+	return !isNonEmptyString(data);
+}
+
+export function validateAddUserToRoomData(data: RequestData): data is AddUserToRoomReq {
+	if (!isObject(data)) {
+		return false;
+	}
+
+	return 'indexRoom' in data;
+}
+
+export function validateAttackData(data: RequestData): data is AttackReq {
+	if (!isObject(data)) {
+		return false;
+	}
+
+	return 'gameId' in data && 'x' in data && 'y' in data && 'indexPlayer' in data;
+}
+
+export function validateRandomAttackData(data: RequestData): data is RandomAttackDataReq {
+	if (!isObject(data)) {
+		return false;
+	}
+
+	return 'gameId' in data && 'indexPlayer' in data;
+}
